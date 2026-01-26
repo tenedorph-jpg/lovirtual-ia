@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { courseModules } from '@/data/courseModules';
+import BadgesDisplay from '@/components/BadgesDisplay';
 import {
   LogOut,
   Sparkles,
@@ -94,7 +95,7 @@ const StudentDashboard: React.FC = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <div className="stat-card">
             <div className="flex items-center gap-3">
               <div className="p-3 rounded-lg bg-primary/10">
@@ -131,19 +132,18 @@ const StudentDashboard: React.FC = () => {
             </div>
           </div>
 
-          <div className="stat-card">
-            <div className="flex items-center gap-3">
-              <div className="p-3 rounded-lg bg-warning/10">
-                <Award className="w-6 h-6 text-warning" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Certificado</p>
-                <p className="text-lg font-bold text-foreground">
-                  {currentStudent.certificateGenerated ? 'Obtenido' : 'Pendiente'}
-                </p>
-              </div>
-            </div>
-          </div>
+          {/* Badges Card - Interactive */}
+          <BadgesDisplay
+            student={{
+              completedModules: currentStudent.completedModules,
+              quizScores: currentStudent.quizScores,
+              averageScore: currentStudent.averageScore,
+              progress: currentStudent.progress,
+              certificateGenerated: currentStudent.certificateGenerated,
+              finalExamScore: currentStudent.finalExamScore,
+            }}
+            compact
+          />
         </div>
 
         {/* Modules Grid */}
