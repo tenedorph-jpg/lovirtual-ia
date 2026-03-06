@@ -23,6 +23,7 @@ interface AuthState {
 }
 
 interface AuthContextType extends AuthState {
+  loading: boolean;
   login: (code: string) => { success: boolean; message: string };
   logout: () => void;
   students: Student[];
