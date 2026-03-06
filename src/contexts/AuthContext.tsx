@@ -23,6 +23,7 @@ interface AuthState {
 }
 
 interface AuthContextType extends AuthState {
+  loading: boolean;
   login: (code: string) => { success: boolean; message: string };
   logout: () => void;
   students: Student[];
@@ -103,6 +104,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     currentStudent: null,
   });
   const [students, setStudents] = useState<Student[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -129,6 +131,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
       }
     }
+    setLoading(false);
   }, []);
 
   // Save students to localStorage whenever they change
@@ -325,6 +328,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     <AuthContext.Provider
       value={{
         ...authState,
+        loading,
         login,
         logout,
         students,
