@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Lock, ArrowRight, Sparkles, Brain, Zap, Target, TrendingUp, Mail } from 'lucide-react';
 import ForgotPasswordDialog from '@/components/ForgotPasswordDialog';
+import ThemeToggle from '@/components/ThemeToggle';
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -38,6 +39,9 @@ const LoginPage: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-background via-muted to-[hsl(200,100%,97%)]">
+      <div className="absolute top-4 right-4 z-50">
+        <ThemeToggle />
+      </div>
       <main className="flex-1 flex items-center">
         <div className="container mx-auto px-4 py-8 lg:py-0">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center">

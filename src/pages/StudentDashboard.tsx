@@ -16,6 +16,7 @@ import {
   Play,
   Award,
 } from 'lucide-react';
+import ThemeToggle from '@/components/ThemeToggle';
 
 const StudentDashboard: React.FC = () => {
   const { currentStudent, logout } = useAuth();
@@ -60,10 +61,13 @@ const StudentDashboard: React.FC = () => {
               <p className="text-sm text-muted-foreground">Bienvenido/a, {currentStudent.name}</p>
             </div>
           </div>
-          <Button variant="outline" onClick={handleLogout} className="gap-2">
-            <LogOut className="w-4 h-4" />
-            Salir
-          </Button>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Button variant="outline" onClick={handleLogout} className="gap-2">
+              <LogOut className="w-4 h-4" />
+              Salir
+            </Button>
+          </div>
         </div>
       </header>
 
