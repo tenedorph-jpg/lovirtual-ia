@@ -1,6 +1,54 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import type { User } from '@supabase/supabase-js';
+import type { Database } from '@/integrations/supabase/types';
 
-export interface Student {
+type LovirtualRole = Database['public']['Enums']['lovirtual_role'];
+
+export interface Profile {
+  id: string;
+  user_id: string;
+  full_name: string;
+  email: string;
+  lovirtual_role: LovirtualRole;
+}
+
+export interface StudentProgress {
+  user_id: string;
+  completed_modules: number[];
+  quiz_scores: Record<string, number>;
+  average_score: number;
+  progress: number;
+  time_spent_minutes: number;
+  certificate_generated: boolean;
+  final_exam_score: number | null;
+}
+
+interface AuthContextType {
+  user: User | null;
+  profile: Profile | null;
+  studentProgress: StudentProgress | null;
+  loading: boolean;
+  isAuthenticated: boolean;
+  isAdmin: boolean;
+  signUp: (email: string, password: string, fullName: string, role: LovirtualRole) => Promise<{ success: boolean; message: string }>;
+  signIn: (email: string, password: string) => Promise<{ success: boolean; message: string }>;
+  signOut: () => Promise<void>;
+  updateStudentProgress: (moduleId: number, score: number) => Promise<void>;
+  completeModule: (moduleId: number) => Promise<void>;
+  setFinalExamScore: (score: number) => Promise<void>;
+  markCertificateGenerated: () => Promise<void>;
+  updateStudentName: (name: string) => Promise<void>;
+  // Legacy compat for pages
+  currentStudent: LegacyStudent | null;
+  role: 'admin' | 'student' | null;
+  logout: () => Promise<void>;
+  students: LegacyStudent[];
+  generateAccessCode: (name: string, email: string) => string;
+}
+
+// Legacy student shape for backward compat with existing pages
+export interface LegacyStudent {
   id: string;
   code: string;
   name: string;
@@ -16,328 +64,240 @@ export interface Student {
   finalExamScore?: number;
 }
 
-interface AuthState {
-  isAuthenticated: boolean;
-  role: 'admin' | 'student' | null;
-  currentStudent: Student | null;
-}
-
-interface AuthContextType extends AuthState {
-  loading: boolean;
-  login: (code: string) => { success: boolean; message: string };
-  logout: () => void;
-  students: Student[];
-  generateAccessCode: (name: string, email: string) => string;
-  updateStudentProgress: (moduleId: number, score: number) => void;
-  updateStudentName: (name: string) => void;
-  completeModule: (moduleId: number) => void;
-  setFinalExamScore: (score: number) => void;
-  markCertificateGenerated: () => void;
-}
-
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const ADMIN_CODE = 'ADMIN-KEY-2026';
-const STORAGE_KEY = 'lovirtual_auth';
-const STUDENTS_KEY = 'lovirtual_students';
-
-const generateCode = (): string => {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let result = 'LV-';
-  for (let i = 0; i < 8; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
-};
-
-// Initial sample students for demo
-const initialStudents: Student[] = [
-  {
-    id: '1',
-    code: 'LV-DEMO2024',
-    name: 'María García',
-    email: 'maria@example.com',
-    progress: 70,
-    averageScore: 85,
-    completedModules: [1, 2, 3, 4, 5, 6, 7],
-    quizScores: { 1: 90, 2: 80, 3: 85, 4: 90, 5: 80, 6: 85, 7: 85 },
-    enrolledAt: '2024-01-15',
-    lastActive: '2024-01-20',
-    timeSpentMinutes: 480,
-    certificateGenerated: false,
-  },
-  {
-    id: '2',
-    code: 'LV-TEST2024',
-    name: 'Carlos Rodríguez',
-    email: 'carlos@example.com',
-    progress: 40,
-    averageScore: 78,
-    completedModules: [1, 2, 3, 4],
-    quizScores: { 1: 75, 2: 80, 3: 75, 4: 82 },
-    enrolledAt: '2024-01-10',
-    lastActive: '2024-01-18',
-    timeSpentMinutes: 320,
-    certificateGenerated: false,
-  },
-  {
-    id: '3',
-    code: 'LV-ALPHA123',
-    name: 'Ana Martínez',
-    email: 'ana@example.com',
-    progress: 100,
-    averageScore: 92,
-    completedModules: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-    quizScores: { 1: 95, 2: 90, 3: 92, 4: 88, 5: 95, 6: 90, 7: 93, 8: 92, 9: 95, 10: 90 },
-    enrolledAt: '2024-01-05',
-    lastActive: '2024-01-20',
-    timeSpentMinutes: 720,
-    certificateGenerated: true,
-    finalExamScore: 94,
-  },
-];
-
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [authState, setAuthState] = useState<AuthState>({
-    isAuthenticated: false,
-    role: null,
-    currentStudent: null,
-  });
-  const [students, setStudents] = useState<Student[]>([]);
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [studentProgress, setStudentProgress] = useState<StudentProgress | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [allProfiles, setAllProfiles] = useState<any[]>([]);
+  const [allProgress, setAllProgress] = useState<any[]>([]);
 
-  // Load from localStorage on mount
+  const fetchProfile = async (userId: string) => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+    if (data) setProfile(data as Profile);
+    return data;
+  };
+
+  const fetchProgress = async (userId: string) => {
+    const { data } = await supabase
+      .from('student_progress')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+    if (data) {
+      setStudentProgress({
+        ...data,
+        quiz_scores: (data.quiz_scores as Record<string, number>) || {},
+      });
+    }
+    return data;
+  };
+
+  const checkAdmin = async (userId: string) => {
+    const { data } = await supabase.rpc('has_role', { _user_id: userId, _role: 'admin' });
+    setIsAdmin(!!data);
+    return !!data;
+  };
+
+  const fetchAllForAdmin = async () => {
+    const { data: profiles } = await supabase.from('profiles').select('*');
+    const { data: progress } = await supabase.from('student_progress').select('*');
+    if (profiles) setAllProfiles(profiles);
+    if (progress) setAllProgress(progress);
+  };
+
   useEffect(() => {
-    const savedAuth = localStorage.getItem(STORAGE_KEY);
-    const savedStudents = localStorage.getItem(STUDENTS_KEY);
-
-    if (savedStudents) {
-      setStudents(JSON.parse(savedStudents));
-    } else {
-      setStudents(initialStudents);
-      localStorage.setItem(STUDENTS_KEY, JSON.stringify(initialStudents));
-    }
-
-    if (savedAuth) {
-      const parsed = JSON.parse(savedAuth);
-      // Re-validate the session
-      if (parsed.role === 'admin') {
-        setAuthState(parsed);
-      } else if (parsed.role === 'student' && parsed.currentStudent) {
-        const currentStudents = savedStudents ? JSON.parse(savedStudents) : initialStudents;
-        const student = currentStudents.find((s: Student) => s.code === parsed.currentStudent.code);
-        if (student) {
-          setAuthState({ ...parsed, currentStudent: student });
-        }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        setUser(session.user);
+        // Use setTimeout to avoid Supabase deadlock
+        setTimeout(async () => {
+          await fetchProfile(session.user.id);
+          await fetchProgress(session.user.id);
+          const admin = await checkAdmin(session.user.id);
+          if (admin) await fetchAllForAdmin();
+          setLoading(false);
+        }, 0);
+      } else {
+        setUser(null);
+        setProfile(null);
+        setStudentProgress(null);
+        setIsAdmin(false);
+        setLoading(false);
       }
-    }
-    setLoading(false);
+    });
+
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session?.user) {
+        setUser(session.user);
+        await fetchProfile(session.user.id);
+        await fetchProgress(session.user.id);
+        const admin = await checkAdmin(session.user.id);
+        if (admin) await fetchAllForAdmin();
+      }
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  // Save students to localStorage whenever they change
-  useEffect(() => {
-    if (students.length > 0) {
-      localStorage.setItem(STUDENTS_KEY, JSON.stringify(students));
-    }
-  }, [students]);
-
-  // Save auth state
-  useEffect(() => {
-    if (authState.isAuthenticated) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(authState));
-    }
-  }, [authState]);
-
-  const login = (code: string): { success: boolean; message: string } => {
-    const trimmedCode = code.trim().toUpperCase();
-
-    if (trimmedCode === ADMIN_CODE) {
-      setAuthState({
-        isAuthenticated: true,
-        role: 'admin',
-        currentStudent: null,
-      });
-      return { success: true, message: 'Bienvenido, Administrador' };
-    }
-
-    const student = students.find(s => s.code.toUpperCase() === trimmedCode);
-    if (student) {
-      const updatedStudent = {
-        ...student,
-        lastActive: new Date().toISOString().split('T')[0],
-      };
-      setStudents(prev => prev.map(s => s.id === student.id ? updatedStudent : s));
-      setAuthState({
-        isAuthenticated: true,
-        role: 'student',
-        currentStudent: updatedStudent,
-      });
-      return { success: true, message: `Bienvenido/a, ${student.name}` };
-    }
-
-    return { success: false, message: 'Código de acceso inválido' };
-  };
-
-  const logout = () => {
-    setAuthState({
-      isAuthenticated: false,
-      role: null,
-      currentStudent: null,
-    });
-    localStorage.removeItem(STORAGE_KEY);
-  };
-
-  const generateAccessCode = (name: string, email: string): string => {
-    const newCode = generateCode();
-    const newStudent: Student = {
-      id: Date.now().toString(),
-      code: newCode,
-      name,
+  const signUp = async (email: string, password: string, fullName: string, role: LovirtualRole) => {
+    const { error } = await supabase.auth.signUp({
       email,
-      progress: 0,
-      averageScore: 0,
-      completedModules: [],
-      quizScores: {},
-      enrolledAt: new Date().toISOString().split('T')[0],
-      lastActive: new Date().toISOString().split('T')[0],
-      timeSpentMinutes: 0,
-      certificateGenerated: false,
+      password,
+      options: {
+        data: { full_name: fullName, lovirtual_role: role },
+      },
+    });
+    if (error) return { success: false, message: error.message };
+    return { success: true, message: `¡Bienvenido/a, ${fullName}!` };
+  };
+
+  const signIn = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) return { success: false, message: 'Credenciales inválidas' };
+    return { success: true, message: '¡Bienvenido/a!' };
+  };
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+  };
+
+  const updateStudentProgress = async (moduleId: number, score: number) => {
+    if (!user || !studentProgress) return;
+    const newQuizScores: Record<string, number> = { ...studentProgress.quiz_scores, [moduleId]: score };
+    const completedCount = Object.keys(newQuizScores).length;
+    const vals = Object.values(newQuizScores) as number[];
+    const totalScore = vals.reduce((a, b) => a + b, 0);
+    const avgScore = Math.round(totalScore / completedCount);
+    const progress = Math.round((completedCount / 10) * 100);
+
+    await supabase
+      .from('student_progress')
+      .update({
+        quiz_scores: newQuizScores,
+        average_score: avgScore,
+        progress,
+        time_spent_minutes: studentProgress.time_spent_minutes + 15,
+      })
+      .eq('user_id', user.id);
+
+    setStudentProgress(prev => prev ? {
+      ...prev,
+      quiz_scores: newQuizScores,
+      average_score: avgScore,
+      progress,
+      time_spent_minutes: prev.time_spent_minutes + 15,
+    } : null);
+  };
+
+  const completeModule = async (moduleId: number) => {
+    if (!user || !studentProgress) return;
+    if (studentProgress.completed_modules.includes(moduleId)) return;
+    const newModules = [...studentProgress.completed_modules, moduleId];
+    await supabase
+      .from('student_progress')
+      .update({ completed_modules: newModules })
+      .eq('user_id', user.id);
+    setStudentProgress(prev => prev ? { ...prev, completed_modules: newModules } : null);
+  };
+
+  const setFinalExamScore = async (score: number) => {
+    if (!user) return;
+    await supabase
+      .from('student_progress')
+      .update({ final_exam_score: score, progress: 100 })
+      .eq('user_id', user.id);
+    setStudentProgress(prev => prev ? { ...prev, final_exam_score: score, progress: 100 } : null);
+  };
+
+  const markCertificateGenerated = async () => {
+    if (!user) return;
+    await supabase
+      .from('student_progress')
+      .update({ certificate_generated: true })
+      .eq('user_id', user.id);
+    setStudentProgress(prev => prev ? { ...prev, certificate_generated: true } : null);
+  };
+
+  const updateStudentName = async (name: string) => {
+    if (!user) return;
+    await supabase
+      .from('profiles')
+      .update({ full_name: name })
+      .eq('user_id', user.id);
+    setProfile(prev => prev ? { ...prev, full_name: name } : null);
+  };
+
+  // Legacy compat: build currentStudent from profile + progress
+  const currentStudent: LegacyStudent | null = profile && studentProgress ? {
+    id: profile.user_id,
+    code: '',
+    name: profile.full_name,
+    email: profile.email,
+    progress: studentProgress.progress,
+    averageScore: studentProgress.average_score,
+    completedModules: studentProgress.completed_modules,
+    quizScores: Object.fromEntries(
+      Object.entries(studentProgress.quiz_scores).map(([k, v]) => [Number(k), v])
+    ),
+    enrolledAt: '',
+    lastActive: '',
+    timeSpentMinutes: studentProgress.time_spent_minutes,
+    certificateGenerated: studentProgress.certificate_generated,
+    finalExamScore: studentProgress.final_exam_score ?? undefined,
+  } : null;
+
+  // Legacy: build students list for admin
+  const students: LegacyStudent[] = allProfiles.map(p => {
+    const prog = allProgress.find(pr => pr.user_id === p.user_id);
+    const qs = (prog?.quiz_scores as Record<string, number>) || {};
+    return {
+      id: p.user_id,
+      code: p.lovirtual_role,
+      name: p.full_name,
+      email: p.email,
+      progress: prog?.progress || 0,
+      averageScore: prog?.average_score || 0,
+      completedModules: prog?.completed_modules || [],
+      quizScores: Object.fromEntries(Object.entries(qs).map(([k, v]) => [Number(k), v])),
+      enrolledAt: p.created_at?.split('T')[0] || '',
+      lastActive: prog?.updated_at?.split('T')[0] || '',
+      timeSpentMinutes: prog?.time_spent_minutes || 0,
+      certificateGenerated: prog?.certificate_generated || false,
+      finalExamScore: prog?.final_exam_score ?? undefined,
     };
-    setStudents(prev => [...prev, newStudent]);
-    return newCode;
-  };
-
-  const updateStudentProgress = (moduleId: number, score: number) => {
-    if (!authState.currentStudent) return;
-
-    setStudents(prev => {
-      const updated = prev.map(s => {
-        if (s.id === authState.currentStudent?.id) {
-          const newQuizScores = { ...s.quizScores, [moduleId]: score };
-          const completedCount = Object.keys(newQuizScores).length;
-          const totalScore = Object.values(newQuizScores).reduce((a, b) => a + b, 0);
-          const avgScore = Math.round(totalScore / completedCount);
-          const progress = Math.round((completedCount / 10) * 100);
-
-          return {
-            ...s,
-            quizScores: newQuizScores,
-            averageScore: avgScore,
-            progress,
-            timeSpentMinutes: s.timeSpentMinutes + 15,
-          };
-        }
-        return s;
-      });
-
-      const currentStudent = updated.find(s => s.id === authState.currentStudent?.id);
-      if (currentStudent) {
-        setAuthState(prev => ({ ...prev, currentStudent }));
-      }
-
-      return updated;
-    });
-  };
-
-  const updateStudentName = (name: string) => {
-    if (!authState.currentStudent) return;
-
-    setStudents(prev => {
-      const updated = prev.map(s => {
-        if (s.id === authState.currentStudent?.id) {
-          return { ...s, name };
-        }
-        return s;
-      });
-
-      const currentStudent = updated.find(s => s.id === authState.currentStudent?.id);
-      if (currentStudent) {
-        setAuthState(prev => ({ ...prev, currentStudent }));
-      }
-
-      return updated;
-    });
-  };
-
-  const completeModule = (moduleId: number) => {
-    if (!authState.currentStudent) return;
-
-    setStudents(prev => {
-      const updated = prev.map(s => {
-        if (s.id === authState.currentStudent?.id) {
-          if (!s.completedModules.includes(moduleId)) {
-            return {
-              ...s,
-              completedModules: [...s.completedModules, moduleId],
-            };
-          }
-        }
-        return s;
-      });
-
-      const currentStudent = updated.find(s => s.id === authState.currentStudent?.id);
-      if (currentStudent) {
-        setAuthState(prev => ({ ...prev, currentStudent }));
-      }
-
-      return updated;
-    });
-  };
-
-  const setFinalExamScore = (score: number) => {
-    if (!authState.currentStudent) return;
-
-    setStudents(prev => {
-      const updated = prev.map(s => {
-        if (s.id === authState.currentStudent?.id) {
-          return { ...s, finalExamScore: score, progress: 100 };
-        }
-        return s;
-      });
-
-      const currentStudent = updated.find(s => s.id === authState.currentStudent?.id);
-      if (currentStudent) {
-        setAuthState(prev => ({ ...prev, currentStudent }));
-      }
-
-      return updated;
-    });
-  };
-
-  const markCertificateGenerated = () => {
-    if (!authState.currentStudent) return;
-
-    setStudents(prev => {
-      const updated = prev.map(s => {
-        if (s.id === authState.currentStudent?.id) {
-          return { ...s, certificateGenerated: true };
-        }
-        return s;
-      });
-
-      const currentStudent = updated.find(s => s.id === authState.currentStudent?.id);
-      if (currentStudent) {
-        setAuthState(prev => ({ ...prev, currentStudent }));
-      }
-
-      return updated;
-    });
-  };
+  });
 
   return (
     <AuthContext.Provider
       value={{
-        ...authState,
+        user,
+        profile,
+        studentProgress,
         loading,
-        login,
-        logout,
-        students,
-        generateAccessCode,
+        isAuthenticated: !!user,
+        isAdmin,
+        signUp,
+        signIn,
+        signOut,
         updateStudentProgress,
-        updateStudentName,
         completeModule,
         setFinalExamScore,
         markCertificateGenerated,
+        updateStudentName,
+        currentStudent,
+        role: !user ? null : isAdmin ? 'admin' : 'student',
+        logout: signOut,
+        students,
+        generateAccessCode: () => '',
       }}
     >
       {children}
