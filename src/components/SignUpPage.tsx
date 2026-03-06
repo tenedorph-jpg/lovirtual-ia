@@ -5,15 +5,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { UserPlus, ArrowRight, Sparkles, Brain, Zap, Target, TrendingUp } from 'lucide-react';
+import ThemeToggle from '@/components/ThemeToggle';
 import type { Database } from '@/integrations/supabase/types';
 
 type LovirtualRole = Database['public']['Enums']['lovirtual_role'];
 
 const roleLabels: Record<LovirtualRole, string> = {
-  admin: 'Admin',
+  admin: 'Administrativo',
   contable: 'Contable',
   cm: 'Community Manager',
   diseno: 'Diseño',
+  atencion_ventas: 'Atención al cliente / Ventas',
+  admin_bilingue: 'Administrativo Bilingüe',
 };
 
 const SignUpPage: React.FC = () => {
@@ -56,6 +59,11 @@ const SignUpPage: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-background via-muted to-[hsl(200,100%,97%)]">
+      {/* Theme Toggle */}
+      <div className="absolute top-4 right-4 z-50">
+        <ThemeToggle />
+      </div>
+
       <main className="flex-1 flex items-center">
         <div className="container mx-auto px-4 py-8 lg:py-0">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center">
@@ -101,40 +109,16 @@ const SignUpPage: React.FC = () => {
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                       <label className="text-sm font-medium text-foreground mb-1 block">Nombre Completo</label>
-                      <Input
-                        type="text"
-                        placeholder="Ej: María García"
-                        value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
-                        className="h-11 bg-card"
-                        disabled={isLoading}
-                      />
+                      <Input type="text" placeholder="Ej: María García" value={fullName} onChange={(e) => setFullName(e.target.value)} className="h-11 bg-card" disabled={isLoading} />
                     </div>
-
                     <div>
                       <label className="text-sm font-medium text-foreground mb-1 block">Email Corporativo/Personal</label>
-                      <Input
-                        type="email"
-                        placeholder="maria@empresa.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="h-11 bg-card"
-                        disabled={isLoading}
-                      />
+                      <Input type="email" placeholder="maria@empresa.com" value={email} onChange={(e) => setEmail(e.target.value)} className="h-11 bg-card" disabled={isLoading} />
                     </div>
-
                     <div>
                       <label className="text-sm font-medium text-foreground mb-1 block">Contraseña</label>
-                      <Input
-                        type="password"
-                        placeholder="Mínimo 6 caracteres"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="h-11 bg-card"
-                        disabled={isLoading}
-                      />
+                      <Input type="password" placeholder="Mínimo 6 caracteres" value={password} onChange={(e) => setPassword(e.target.value)} className="h-11 bg-card" disabled={isLoading} />
                     </div>
-
                     <div>
                       <label className="text-sm font-medium text-foreground mb-1 block">Rol en LoVirtual</label>
                       <Select value={role} onValueChange={(v) => setRole(v as LovirtualRole)} disabled={isLoading}>
@@ -155,11 +139,7 @@ const SignUpPage: React.FC = () => {
                       </div>
                     )}
 
-                    <Button
-                      type="submit"
-                      className="w-full h-12 lovirtual-gradient-bg text-primary-foreground font-semibold text-base hover:opacity-90 transition-opacity"
-                      disabled={isLoading}
-                    >
+                    <Button type="submit" className="w-full h-12 lovirtual-gradient-bg text-primary-foreground font-semibold text-base hover:opacity-90 transition-opacity" disabled={isLoading}>
                       {isLoading ? (
                         <span className="flex items-center gap-2">
                           <span className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
