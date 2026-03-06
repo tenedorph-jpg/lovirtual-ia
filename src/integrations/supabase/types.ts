@@ -112,7 +112,13 @@ export type Database = {
       has_role: { Args: { _role: string; _user_id: string }; Returns: boolean }
     }
     Enums: {
-      lovirtual_role: "admin" | "contable" | "cm" | "diseno"
+      lovirtual_role:
+        | "admin"
+        | "contable"
+        | "cm"
+        | "diseno"
+        | "atencion_ventas"
+        | "admin_bilingue"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -240,7 +246,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      lovirtual_role: ["admin", "contable", "cm", "diseno"],
+      lovirtual_role: [
+        "admin",
+        "contable",
+        "cm",
+        "diseno",
+        "atencion_ventas",
+        "admin_bilingue",
+      ],
     },
   },
 } as const
