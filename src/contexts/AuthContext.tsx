@@ -130,7 +130,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           setAuthState({ ...parsed, currentStudent: student });
         }
       }
-    }
+    setLoading(false);
   }, []);
 
   // Save students to localStorage whenever they change
@@ -327,6 +327,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     <AuthContext.Provider
       value={{
         ...authState,
+        loading,
         login,
         logout,
         students,
