@@ -14,16 +14,105 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          lovirtual_role: Database["public"]["Enums"]["lovirtual_role"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          full_name: string
+          id?: string
+          lovirtual_role?: Database["public"]["Enums"]["lovirtual_role"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          lovirtual_role?: Database["public"]["Enums"]["lovirtual_role"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      student_progress: {
+        Row: {
+          average_score: number
+          certificate_generated: boolean
+          completed_modules: number[]
+          created_at: string
+          final_exam_score: number | null
+          id: string
+          progress: number
+          quiz_scores: Json
+          time_spent_minutes: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          average_score?: number
+          certificate_generated?: boolean
+          completed_modules?: number[]
+          created_at?: string
+          final_exam_score?: number | null
+          id?: string
+          progress?: number
+          quiz_scores?: Json
+          time_spent_minutes?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          average_score?: number
+          certificate_generated?: boolean
+          completed_modules?: number[]
+          created_at?: string
+          final_exam_score?: number | null
+          id?: string
+          progress?: number
+          quiz_scores?: Json
+          time_spent_minutes?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: { Args: { _role: string; _user_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      lovirtual_role: "admin" | "contable" | "cm" | "diseno"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +239,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      lovirtual_role: ["admin", "contable", "cm", "diseno"],
+    },
   },
 } as const
