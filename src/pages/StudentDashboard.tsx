@@ -149,63 +149,13 @@ const StudentDashboard: React.FC = () => {
           />
         </div>
 
-        {/* Modules Grid */}
+        {/* Modules Accordion */}
         <h3 className="text-xl font-bold text-foreground mb-4">Contenido del Curso</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-          {courseModules.map((module) => {
-            const status = getModuleStatus(module.id);
-            const score = currentStudent.quizScores[module.id];
-
-            return (
-              <div
-                key={module.id}
-                className={`module-card ${status === 'locked' ? 'opacity-60' : ''}`}
-              >
-                <div className="p-5">
-                  <div className="flex items-start justify-between mb-3">
-                    <span className="text-3xl">{module.icon}</span>
-                    {status === 'completed' && (
-                      <span className="inline-flex items-center gap-1 px-2 py-1 bg-success/10 text-success rounded-full text-xs font-medium">
-                        <CheckCircle className="w-3 h-3" />
-                        {score}%
-                      </span>
-                    )}
-                    {status === 'locked' && (
-                      <Lock className="w-5 h-5 text-muted-foreground" />
-                    )}
-                  </div>
-                  <h4 className="font-semibold text-foreground mb-1">
-                    Módulo {module.id}: {module.title}
-                  </h4>
-                  <p className="text-sm text-muted-foreground mb-3">{module.subtitle}</p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {module.duration}
-                    </span>
-                    <Button
-                      size="sm"
-                      variant={status === 'completed' ? 'outline' : 'default'}
-                      disabled={status === 'locked'}
-                      onClick={() => navigate(`/module/${module.id}`)}
-                      className={status !== 'locked' ? 'gap-1' : ''}
-                    >
-                      {status === 'locked' ? (
-                        'Bloqueado'
-                      ) : status === 'completed' ? (
-                        'Revisar'
-                      ) : (
-                        <>
-                          <Play className="w-3 h-3" />
-                          Comenzar
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+        <div className="mb-8">
+          <CourseAccordion
+            completedModules={currentStudent.completedModules}
+            quizScores={currentStudent.quizScores}
+          />
         </div>
 
         {/* Final Exam Section */}
