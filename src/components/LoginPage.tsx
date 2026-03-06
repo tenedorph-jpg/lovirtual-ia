@@ -4,6 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Lock, ArrowRight, Sparkles, Brain, Zap, Target, TrendingUp, Mail } from 'lucide-react';
+import ForgotPasswordDialog from '@/components/ForgotPasswordDialog';
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -111,6 +112,10 @@ const LoginPage: React.FC = () => {
                         className="h-12 bg-card"
                         disabled={isLoading}
                       />
+                    </div>
+
+                    <div className="flex justify-end">
+                      <ForgotPasswordDialog />
                     </div>
 
                     {error && (
