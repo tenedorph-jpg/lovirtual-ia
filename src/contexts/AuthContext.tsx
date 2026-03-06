@@ -130,6 +130,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           setAuthState({ ...parsed, currentStudent: student });
         }
       }
+    }
     setLoading(false);
   }, []);
 
