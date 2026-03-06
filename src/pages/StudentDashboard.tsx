@@ -11,12 +11,11 @@ import {
   BookOpen,
   Trophy,
   Clock,
-  CheckCircle,
   Lock,
-  Play,
   Award,
 } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
+import CourseAccordion from '@/components/CourseAccordion';
 
 const StudentDashboard: React.FC = () => {
   const { currentStudent, logout } = useAuth();
