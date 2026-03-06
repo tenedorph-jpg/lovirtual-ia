@@ -174,7 +174,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (!user || !studentProgress) return;
     const newQuizScores = { ...studentProgress.quiz_scores, [moduleId]: score };
     const completedCount = Object.keys(newQuizScores).length;
-    const totalScore = Object.values(newQuizScores).reduce((a, b) => a + b, 0);
+    const totalScore = Object.values(newQuizScores).reduce((a: number, b: number) => a + b, 0);
     const avgScore = Math.round(totalScore / completedCount);
     const progress = Math.round((completedCount / 10) * 100);
 
