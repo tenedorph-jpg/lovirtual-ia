@@ -104,6 +104,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     currentStudent: null,
   });
   const [students, setStudents] = useState<Student[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // Load from localStorage on mount
   useEffect(() => {
