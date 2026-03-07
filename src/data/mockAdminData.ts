@@ -42,7 +42,7 @@ export const PROFILE_LABELS: Record<string, string> = {
   admin: "Administrativo",
   contable: "Contable",
   cm: "Community Manager",
-  diseno: "Diseño",
+  diseno: "Diseñador Gráfico",
   atencion_ventas: "Atención al Cliente / Ventas",
   admin_bilingue: "Administrativo Bilingüe",
 };
