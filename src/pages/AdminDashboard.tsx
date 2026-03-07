@@ -298,7 +298,63 @@ const AdminDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Students Table */}
+        {/* Best Score + Error Rate */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Best Score KPI */}
+          <div className="lovirtual-card flex flex-col items-center justify-center text-center">
+            <div className="p-4 rounded-full bg-warning/10 mb-4">
+              <Trophy className="w-10 h-10 text-warning" />
+            </div>
+            <p className="text-sm text-muted-foreground mb-1">Mejor Puntuación Promedio</p>
+            <p className="text-4xl font-bold text-foreground mb-1">{kpiExtras.puntuacionPromedio[0].puntuacion}</p>
+            <p className="text-lg font-semibold text-primary">{kpiExtras.puntuacionPromedio[0].perfil}</p>
+            <div className="mt-4 w-full space-y-2">
+              {kpiExtras.puntuacionPromedio.slice(1).map((p, i) => (
+                <div key={i} className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">{p.perfil}</span>
+                  <span className="font-semibold text-foreground">{p.puntuacion}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Error Rate Table */}
+          <div className="lovirtual-card">
+            <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-destructive" />
+              Mayor Índice de Error por Perfil
+            </h3>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-12">#</TableHead>
+                  <TableHead>Perfil</TableHead>
+                  <TableHead className="text-right">Tasa de Error</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {kpiExtras.tasaErroresRespuestas.map((item, i) => (
+                  <TableRow key={i}>
+                    <TableCell className="font-medium text-muted-foreground">{i + 1}</TableCell>
+                    <TableCell className="font-medium text-foreground">{item.perfil}</TableCell>
+                    <TableCell className="text-right">
+                      <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${
+                        parseFloat(item.tasaError) >= 15
+                          ? 'bg-destructive/10 text-destructive'
+                          : parseFloat(item.tasaError) >= 10
+                          ? 'bg-warning/10 text-warning'
+                          : 'bg-success/10 text-success'
+                      }`}>
+                        {item.tasaError}
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+
         <div className="lovirtual-card">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <h3 className="font-semibold text-foreground flex items-center gap-2">
