@@ -38,20 +38,6 @@ const chartTooltipStyle = {
   color: 'hsl(var(--foreground))',
 };
 
-// Custom label for the center of the donut
-const CenterLabel = ({ viewBox }: any) => {
-  const { cx, cy } = viewBox;
-  return (
-    <g>
-      <text x={cx} y={cy - 8} textAnchor="middle" fill="hsl(var(--foreground))" fontSize="28" fontWeight="bold">
-        {metricas.totalInscritos}
-      </text>
-      <text x={cx} y={cy + 14} textAnchor="middle" fill="hsl(var(--muted-foreground))" fontSize="12">
-        Inscritos
-      </text>
-    </g>
-  );
-};
 
 const AdminDashboard: React.FC = () => {
   const { logout } = useAuth();
