@@ -28,7 +28,7 @@ import ThemeToggle from '@/components/ThemeToggle';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Constants } from '@/integrations/supabase/types';
-import { mockAdminData, PROFILE_LABELS } from '@/data/mockAdminData';
+import { mockAdminData, PROFILE_LABELS, kpiExtras } from '@/data/mockAdminData';
 
 const { metricas, estudiantes } = mockAdminData;
 
