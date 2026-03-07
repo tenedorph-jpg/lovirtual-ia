@@ -286,7 +286,7 @@ const AdminDashboard: React.FC = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Nombre</TableHead>
-                  <TableHead>Código Asignado</TableHead>
+                  <TableHead>Rol</TableHead>
                   <TableHead>Progreso</TableHead>
                   <TableHead>Puntuación Promedio</TableHead>
                   <TableHead>Última Actividad</TableHead>
@@ -297,7 +297,7 @@ const AdminDashboard: React.FC = () => {
                 {students.map((student) => (
                   <TableRow key={student.id}>
                     <TableCell><div><p className="font-medium text-foreground">{student.name}</p><p className="text-sm text-muted-foreground">{student.email}</p></div></TableCell>
-                    <TableCell><code className="bg-muted px-2 py-1 rounded text-sm font-mono">{student.code}</code></TableCell>
+                    <TableCell><span className="inline-flex items-center px-2 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium">{ROLE_LABELS[student.code] || student.code}</span></TableCell>
                     <TableCell><div className="flex items-center gap-2"><Progress value={student.progress} className="w-24 h-2" /><span className="text-sm text-muted-foreground">{student.progress}%</span></div></TableCell>
                     <TableCell><span className={`font-semibold ${student.averageScore >= 80 ? 'text-success' : student.averageScore >= 60 ? 'text-warning' : 'text-destructive'}`}>{student.averageScore || '-'}%</span></TableCell>
                     <TableCell className="text-muted-foreground">{student.lastActive}</TableCell>
