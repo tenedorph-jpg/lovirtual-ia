@@ -22,6 +22,7 @@ import {
 import {
   Users, LogOut, TrendingUp, Clock, CheckCircle,
   Sparkles, UserPlus, Copy, Check, Loader2, Filter,
+  Trophy, AlertTriangle,
 } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 import { supabase } from '@/integrations/supabase/client';
