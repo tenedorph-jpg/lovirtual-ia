@@ -30,7 +30,7 @@ import { toast } from '@/hooks/use-toast';
 import { Constants } from '@/integrations/supabase/types';
 import { mockAdminData, PROFILE_LABELS, kpiExtras } from '@/data/mockAdminData';
 
-const { metricas, estudiantes } = mockAdminData;
+const { metricas } = mockAdminData;
 
 const chartTooltipStyle = {
   backgroundColor: 'hsl(var(--card))',
@@ -41,7 +41,7 @@ const chartTooltipStyle = {
 
 
 const AdminDashboard: React.FC = () => {
-  const { logout } = useAuth();
+  const { logout, students } = useAuth();
   const navigate = useNavigate();
   const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');
@@ -90,6 +90,20 @@ const AdminDashboard: React.FC = () => {
     setCreatedInfo(null); setIsDialogOpen(false);
   };
 
+  // Map real students to table shape
+  const estudiantes = useMemo(() => {
+    return students.map((s) => ({
+      id: s.id,
+      nombre: s.name,
+      email: s.email,
+      perfil: s.code, // lovirtual_role stored as code
+      progreso: s.progress,
+      puntuacion: s.averageScore > 0 ? `${s.averageScore}%` : '-%',
+      actividad: s.lastActive || s.enrolledAt || '-',
+      certificado: s.certificateGenerated ? 'Generado' : 'Pendiente',
+    }));
+  }, [students]);
+
   // Filtered students
   const filteredStudents = useMemo(() => {
     return estudiantes.filter((s) => {
@@ -100,12 +114,11 @@ const AdminDashboard: React.FC = () => {
       const profileMatch = profileFilter === 'todos' || s.perfil === profileFilter;
       return statusMatch && profileMatch;
     });
-  }, [statusFilter, profileFilter]);
+  }, [statusFilter, profileFilter, estudiantes]);
 
-  // Unique profiles from students for filter dropdown
+  // All available profiles for filter dropdown
   const uniqueProfiles = useMemo(() => {
-    const set = new Set(estudiantes.map((s) => s.perfil));
-    return Array.from(set);
+    return Object.keys(PROFILE_LABELS);
   }, []);
 
   return (
