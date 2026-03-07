@@ -257,23 +257,24 @@ const AdminDashboard: React.FC = () => {
                     nameKey="perfil"
                     label={({ perfil, cantidad }) => `${perfil}: ${cantidad}`}
                   >
-                    {metricas.distribucionPerfiles.map((entry, i) => (
+                  {metricas.distribucionPerfiles.map((entry, i) => (
                       <Cell key={i} fill={entry.fill} />
                     ))}
-                    {/* Center label */}
-                    <CenterLabel viewBox={{ cx: 0, cy: 0 }} />
                   </Pie>
                   <Tooltip
                     contentStyle={chartTooltipStyle}
                     formatter={(value: number, name: string) => [`Cantidad de usuarios: ${value}`, name]}
                   />
                   <Legend />
-                  {/* Render center text via a custom Pie label won't work, use a text overlay */}
+                  {/* Center text */}
+                  <text x="50%" y="46%" textAnchor="middle" dominantBaseline="middle" fill="hsl(var(--foreground))" fontSize="28" fontWeight="bold">
+                    {metricas.totalInscritos}
+                  </text>
+                  <text x="50%" y="55%" textAnchor="middle" dominantBaseline="middle" fill="hsl(var(--muted-foreground))" fontSize="12">
+                    Inscritos
+                  </text>
                 </PieChart>
               </ResponsiveContainer>
-              {/* Center text overlay */}
-              <div className="relative -mt-[calc(50%+1rem)] flex flex-col items-center justify-center pointer-events-none" style={{ height: 0 }}>
-              </div>
             </div>
           </div>
 
