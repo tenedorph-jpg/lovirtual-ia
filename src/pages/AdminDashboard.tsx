@@ -7,6 +7,9 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from '@/components/ui/dialog';
 import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
+import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import { Progress } from '@/components/ui/progress';
@@ -15,30 +18,71 @@ import {
   LineChart, Line, PieChart, Pie, Cell, Legend,
 } from 'recharts';
 import {
-  Users, KeyRound, LogOut, Plus, TrendingUp, Clock, CheckCircle,
-  Sparkles, Copy, Check,
+  Users, LogOut, Plus, TrendingUp, Clock, CheckCircle,
+  Sparkles, UserPlus, Copy, Check, Loader2,
 } from 'lucide-react';
 import { courseModules } from '@/data/courseModules';
 import ThemeToggle from '@/components/ThemeToggle';
 import KpiSection from '@/components/KpiSection';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
+import { Constants } from '@/integrations/supabase/types';
+
+const ROLE_LABELS: Record<string, string> = {
+  admin: 'Administrativo',
+  contable: 'Contable',
+  cm: 'Community Manager',
+  diseno: 'Diseño',
+  atencion_ventas: 'Atención al Cliente / Ventas',
+  admin_bilingue: 'Administrativo Bilingüe',
+};
 
 const AdminDashboard: React.FC = () => {
-  const { logout, students, generateAccessCode } = useAuth();
+  const { logout, students } = useAuth();
   const navigate = useNavigate();
-  const [newStudentName, setNewStudentName] = useState('');
-  const [newStudentEmail, setNewStudentEmail] = useState('');
-  const [generatedCode, setGeneratedCode] = useState('');
+  const [newName, setNewName] = useState('');
+  const [newEmail, setNewEmail] = useState('');
+  const [newRole, setNewRole] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [copiedCode, setCopiedCode] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [createdInfo, setCreatedInfo] = useState<{ email: string; password: string } | null>(null);
+  const [copiedPwd, setCopiedPwd] = useState(false);
 
   const handleLogout = () => { logout(); navigate('/'); };
-  const handleGenerateCode = () => {
-    if (newStudentName.trim() && newStudentEmail.trim()) {
-      setGeneratedCode(generateAccessCode(newStudentName.trim(), newStudentEmail.trim()));
+
+  const handleCreateUser = async () => {
+    if (!newName.trim() || !newEmail.trim() || !newRole) return;
+    setCreating(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await supabase.functions.invoke('create-user', {
+        body: { full_name: newName.trim(), email: newEmail.trim(), lovirtual_role: newRole },
+      });
+      if (res.error || res.data?.error) {
+        toast({ title: 'Error', description: res.data?.error || res.error?.message || 'Error al crear usuario', variant: 'destructive' });
+      } else {
+        setCreatedInfo({ email: res.data.email, password: res.data.temp_password });
+        toast({ title: '¡Usuario creado!', description: `${newName.trim()} fue registrado exitosamente.` });
+      }
+    } catch (e: any) {
+      toast({ title: 'Error', description: e.message, variant: 'destructive' });
+    } finally {
+      setCreating(false);
     }
   };
-  const handleCopyCode = () => { navigator.clipboard.writeText(generatedCode); setCopiedCode(true); setTimeout(() => setCopiedCode(false), 2000); };
-  const resetDialog = () => { setNewStudentName(''); setNewStudentEmail(''); setGeneratedCode(''); setIsDialogOpen(false); };
+
+  const handleCopyPwd = () => {
+    if (createdInfo) {
+      navigator.clipboard.writeText(createdInfo.password);
+      setCopiedPwd(true);
+      setTimeout(() => setCopiedPwd(false), 2000);
+    }
+  };
+
+  const resetDialog = () => {
+    setNewName(''); setNewEmail(''); setNewRole('');
+    setCreatedInfo(null); setIsDialogOpen(false);
+  };
 
   const totalStudents = students.length;
   const completedStudents = students.filter(s => s.progress === 100).length;
@@ -119,33 +163,61 @@ const AdminDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Generate Access Button */}
+        {/* Create User Button */}
         <div className="flex justify-end mb-6">
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog open={isDialogOpen} onOpenChange={(open) => { if (!open) resetDialog(); else setIsDialogOpen(true); }}>
             <DialogTrigger asChild>
-              <Button className="lovirtual-gradient-bg text-white gap-2"><Plus className="w-4 h-4" />Crear Nuevo Acceso</Button>
+              <Button className="lovirtual-gradient-bg text-white gap-2"><UserPlus className="w-4 h-4" />Crear Nuevo Usuario</Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle className="flex items-center gap-2"><KeyRound className="w-5 h-5 text-primary" />Generar Código de Acceso</DialogTitle>
+                <DialogTitle className="flex items-center gap-2"><UserPlus className="w-5 h-5 text-primary" />Crear Usuario</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 pt-4">
-                {!generatedCode ? (
+                {!createdInfo ? (
                   <>
-                    <div><label className="text-sm font-medium text-foreground">Nombre del Estudiante</label><Input value={newStudentName} onChange={(e) => setNewStudentName(e.target.value)} placeholder="Ej: María García" className="mt-1" /></div>
-                    <div><label className="text-sm font-medium text-foreground">Correo Electrónico</label><Input type="email" value={newStudentEmail} onChange={(e) => setNewStudentEmail(e.target.value)} placeholder="Ej: maria@empresa.com" className="mt-1" /></div>
-                    <Button className="w-full lovirtual-gradient-bg text-white" onClick={handleGenerateCode} disabled={!newStudentName.trim() || !newStudentEmail.trim()}>Generar Código</Button>
+                    <div>
+                      <label className="text-sm font-medium text-foreground">Nombre completo</label>
+                      <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Ej: María García" className="mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-foreground">Correo Electrónico</label>
+                      <Input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="Ej: maria@empresa.com" className="mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-foreground">Rol</label>
+                      <Select value={newRole} onValueChange={setNewRole}>
+                        <SelectTrigger className="mt-1">
+                          <SelectValue placeholder="Selecciona un rol" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Constants.public.Enums.lovirtual_role.filter(r => r !== 'admin').map((role) => (
+                            <SelectItem key={role} value={role}>{ROLE_LABELS[role] || role}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button className="w-full lovirtual-gradient-bg text-white gap-2" onClick={handleCreateUser} disabled={!newName.trim() || !newEmail.trim() || !newRole || creating}>
+                      {creating ? <><Loader2 className="w-4 h-4 animate-spin" />Creando...</> : 'Crear Usuario'}
+                    </Button>
                   </>
                 ) : (
-                  <div className="text-center">
-                    <div className="bg-success/10 rounded-lg p-6 mb-4">
-                      <p className="text-sm text-muted-foreground mb-2">Código generado para {newStudentName}:</p>
-                      <p className="text-2xl font-mono font-bold text-foreground tracking-wider">{generatedCode}</p>
+                  <div className="text-center space-y-4">
+                    <div className="bg-success/10 rounded-lg p-6">
+                      <CheckCircle className="w-10 h-10 text-success mx-auto mb-3" />
+                      <p className="text-sm text-muted-foreground mb-1">Usuario creado exitosamente</p>
+                      <p className="font-medium text-foreground">{createdInfo.email}</p>
                     </div>
-                    <div className="flex gap-2">
-                      <Button variant="outline" className="flex-1 gap-2" onClick={handleCopyCode}>{copiedCode ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}{copiedCode ? 'Copiado!' : 'Copiar'}</Button>
-                      <Button className="flex-1" onClick={resetDialog}>Cerrar</Button>
+                    <div className="bg-muted rounded-lg p-4 text-left">
+                      <p className="text-xs text-muted-foreground mb-1">Contraseña temporal:</p>
+                      <div className="flex items-center gap-2">
+                        <code className="flex-1 text-sm font-mono text-foreground bg-background px-2 py-1 rounded">{createdInfo.password}</code>
+                        <Button variant="ghost" size="sm" onClick={handleCopyPwd}>
+                          {copiedPwd ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
+                        </Button>
+                      </div>
                     </div>
+                    <Button className="w-full" onClick={resetDialog}>Cerrar</Button>
                   </div>
                 )}
               </div>
@@ -214,7 +286,7 @@ const AdminDashboard: React.FC = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Nombre</TableHead>
-                  <TableHead>Código Asignado</TableHead>
+                  <TableHead>Rol</TableHead>
                   <TableHead>Progreso</TableHead>
                   <TableHead>Puntuación Promedio</TableHead>
                   <TableHead>Última Actividad</TableHead>
@@ -225,7 +297,7 @@ const AdminDashboard: React.FC = () => {
                 {students.map((student) => (
                   <TableRow key={student.id}>
                     <TableCell><div><p className="font-medium text-foreground">{student.name}</p><p className="text-sm text-muted-foreground">{student.email}</p></div></TableCell>
-                    <TableCell><code className="bg-muted px-2 py-1 rounded text-sm font-mono">{student.code}</code></TableCell>
+                    <TableCell><span className="inline-flex items-center px-2 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium">{ROLE_LABELS[student.code] || student.code}</span></TableCell>
                     <TableCell><div className="flex items-center gap-2"><Progress value={student.progress} className="w-24 h-2" /><span className="text-sm text-muted-foreground">{student.progress}%</span></div></TableCell>
                     <TableCell><span className={`font-semibold ${student.averageScore >= 80 ? 'text-success' : student.averageScore >= 60 ? 'text-warning' : 'text-destructive'}`}>{student.averageScore || '-'}%</span></TableCell>
                     <TableCell className="text-muted-foreground">{student.lastActive}</TableCell>
