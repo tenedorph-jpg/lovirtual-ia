@@ -163,33 +163,61 @@ const AdminDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Generate Access Button */}
+        {/* Create User Button */}
         <div className="flex justify-end mb-6">
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog open={isDialogOpen} onOpenChange={(open) => { if (!open) resetDialog(); else setIsDialogOpen(true); }}>
             <DialogTrigger asChild>
-              <Button className="lovirtual-gradient-bg text-white gap-2"><Plus className="w-4 h-4" />Crear Nuevo Acceso</Button>
+              <Button className="lovirtual-gradient-bg text-white gap-2"><UserPlus className="w-4 h-4" />Crear Nuevo Usuario</Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle className="flex items-center gap-2"><KeyRound className="w-5 h-5 text-primary" />Generar Código de Acceso</DialogTitle>
+                <DialogTitle className="flex items-center gap-2"><UserPlus className="w-5 h-5 text-primary" />Crear Usuario</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 pt-4">
-                {!generatedCode ? (
+                {!createdInfo ? (
                   <>
-                    <div><label className="text-sm font-medium text-foreground">Nombre del Estudiante</label><Input value={newStudentName} onChange={(e) => setNewStudentName(e.target.value)} placeholder="Ej: María García" className="mt-1" /></div>
-                    <div><label className="text-sm font-medium text-foreground">Correo Electrónico</label><Input type="email" value={newStudentEmail} onChange={(e) => setNewStudentEmail(e.target.value)} placeholder="Ej: maria@empresa.com" className="mt-1" /></div>
-                    <Button className="w-full lovirtual-gradient-bg text-white" onClick={handleGenerateCode} disabled={!newStudentName.trim() || !newStudentEmail.trim()}>Generar Código</Button>
+                    <div>
+                      <label className="text-sm font-medium text-foreground">Nombre completo</label>
+                      <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Ej: María García" className="mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-foreground">Correo Electrónico</label>
+                      <Input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="Ej: maria@empresa.com" className="mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-foreground">Rol</label>
+                      <Select value={newRole} onValueChange={setNewRole}>
+                        <SelectTrigger className="mt-1">
+                          <SelectValue placeholder="Selecciona un rol" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Constants.public.Enums.lovirtual_role.filter(r => r !== 'admin').map((role) => (
+                            <SelectItem key={role} value={role}>{ROLE_LABELS[role] || role}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button className="w-full lovirtual-gradient-bg text-white gap-2" onClick={handleCreateUser} disabled={!newName.trim() || !newEmail.trim() || !newRole || creating}>
+                      {creating ? <><Loader2 className="w-4 h-4 animate-spin" />Creando...</> : 'Crear Usuario'}
+                    </Button>
                   </>
                 ) : (
-                  <div className="text-center">
-                    <div className="bg-success/10 rounded-lg p-6 mb-4">
-                      <p className="text-sm text-muted-foreground mb-2">Código generado para {newStudentName}:</p>
-                      <p className="text-2xl font-mono font-bold text-foreground tracking-wider">{generatedCode}</p>
+                  <div className="text-center space-y-4">
+                    <div className="bg-success/10 rounded-lg p-6">
+                      <CheckCircle className="w-10 h-10 text-success mx-auto mb-3" />
+                      <p className="text-sm text-muted-foreground mb-1">Usuario creado exitosamente</p>
+                      <p className="font-medium text-foreground">{createdInfo.email}</p>
                     </div>
-                    <div className="flex gap-2">
-                      <Button variant="outline" className="flex-1 gap-2" onClick={handleCopyCode}>{copiedCode ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}{copiedCode ? 'Copiado!' : 'Copiar'}</Button>
-                      <Button className="flex-1" onClick={resetDialog}>Cerrar</Button>
+                    <div className="bg-muted rounded-lg p-4 text-left">
+                      <p className="text-xs text-muted-foreground mb-1">Contraseña temporal:</p>
+                      <div className="flex items-center gap-2">
+                        <code className="flex-1 text-sm font-mono text-foreground bg-background px-2 py-1 rounded">{createdInfo.password}</code>
+                        <Button variant="ghost" size="sm" onClick={handleCopyPwd}>
+                          {copiedPwd ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
+                        </Button>
+                      </div>
                     </div>
+                    <Button className="w-full" onClick={resetDialog}>Cerrar</Button>
                   </div>
                 )}
               </div>
