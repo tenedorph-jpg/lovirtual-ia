@@ -7,6 +7,9 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from '@/components/ui/dialog';
 import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
+import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import { Progress } from '@/components/ui/progress';
@@ -15,30 +18,71 @@ import {
   LineChart, Line, PieChart, Pie, Cell, Legend,
 } from 'recharts';
 import {
-  Users, KeyRound, LogOut, Plus, TrendingUp, Clock, CheckCircle,
-  Sparkles, Copy, Check,
+  Users, LogOut, Plus, TrendingUp, Clock, CheckCircle,
+  Sparkles, UserPlus, Copy, Check, Loader2,
 } from 'lucide-react';
 import { courseModules } from '@/data/courseModules';
 import ThemeToggle from '@/components/ThemeToggle';
 import KpiSection from '@/components/KpiSection';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
+import { Constants } from '@/integrations/supabase/types';
+
+const ROLE_LABELS: Record<string, string> = {
+  admin: 'Administrativo',
+  contable: 'Contable',
+  cm: 'Community Manager',
+  diseno: 'Diseño',
+  atencion_ventas: 'Atención al Cliente / Ventas',
+  admin_bilingue: 'Administrativo Bilingüe',
+};
 
 const AdminDashboard: React.FC = () => {
-  const { logout, students, generateAccessCode } = useAuth();
+  const { logout, students } = useAuth();
   const navigate = useNavigate();
-  const [newStudentName, setNewStudentName] = useState('');
-  const [newStudentEmail, setNewStudentEmail] = useState('');
-  const [generatedCode, setGeneratedCode] = useState('');
+  const [newName, setNewName] = useState('');
+  const [newEmail, setNewEmail] = useState('');
+  const [newRole, setNewRole] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [copiedCode, setCopiedCode] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [createdInfo, setCreatedInfo] = useState<{ email: string; password: string } | null>(null);
+  const [copiedPwd, setCopiedPwd] = useState(false);
 
   const handleLogout = () => { logout(); navigate('/'); };
-  const handleGenerateCode = () => {
-    if (newStudentName.trim() && newStudentEmail.trim()) {
-      setGeneratedCode(generateAccessCode(newStudentName.trim(), newStudentEmail.trim()));
+
+  const handleCreateUser = async () => {
+    if (!newName.trim() || !newEmail.trim() || !newRole) return;
+    setCreating(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await supabase.functions.invoke('create-user', {
+        body: { full_name: newName.trim(), email: newEmail.trim(), lovirtual_role: newRole },
+      });
+      if (res.error || res.data?.error) {
+        toast({ title: 'Error', description: res.data?.error || res.error?.message || 'Error al crear usuario', variant: 'destructive' });
+      } else {
+        setCreatedInfo({ email: res.data.email, password: res.data.temp_password });
+        toast({ title: '¡Usuario creado!', description: `${newName.trim()} fue registrado exitosamente.` });
+      }
+    } catch (e: any) {
+      toast({ title: 'Error', description: e.message, variant: 'destructive' });
+    } finally {
+      setCreating(false);
     }
   };
-  const handleCopyCode = () => { navigator.clipboard.writeText(generatedCode); setCopiedCode(true); setTimeout(() => setCopiedCode(false), 2000); };
-  const resetDialog = () => { setNewStudentName(''); setNewStudentEmail(''); setGeneratedCode(''); setIsDialogOpen(false); };
+
+  const handleCopyPwd = () => {
+    if (createdInfo) {
+      navigator.clipboard.writeText(createdInfo.password);
+      setCopiedPwd(true);
+      setTimeout(() => setCopiedPwd(false), 2000);
+    }
+  };
+
+  const resetDialog = () => {
+    setNewName(''); setNewEmail(''); setNewRole('');
+    setCreatedInfo(null); setIsDialogOpen(false);
+  };
 
   const totalStudents = students.length;
   const completedStudents = students.filter(s => s.progress === 100).length;
