@@ -23,6 +23,21 @@ export const mockAdminData = {
   ],
 };
 
+export const kpiExtras = {
+  puntuacionPromedio: [
+    { perfil: "Administrativo Bilingüe", puntuacion: 9.5 },
+    { perfil: "Asistente Virtual", puntuacion: 8.8 },
+    { perfil: "Administrativo", puntuacion: 8.5 },
+    { perfil: "Atención al Cliente / Ventas", puntuacion: 8.2 },
+  ],
+  tasaErroresRespuestas: [
+    { perfil: "Atención al Cliente / Ventas", tasaError: "18%" },
+    { perfil: "Asistente Virtual", tasaError: "12%" },
+    { perfil: "Administrativo", tasaError: "10%" },
+    { perfil: "Administrativo Bilingüe", tasaError: "5%" },
+  ],
+};
+
 export const PROFILE_LABELS: Record<string, string> = {
   admin: "Administrativo",
   contable: "Contable",
