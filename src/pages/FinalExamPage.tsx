@@ -294,7 +294,27 @@ const CertificateView: React.FC<{
   const certId = `CERT-${Date.now()}-${Math.floor(Math.random() * 100)}`;
   const courseName = 'Inteligencia Artificial y Herramientas Digitales: De Usuario a Creador';
 
-  const generatePDF = () => {
+  // Load image as base64 dataURL via canvas
+  const imgToDataUrl = (src: string): Promise<string> =>
+    new Promise(resolve => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        const c = document.createElement('canvas');
+        c.width = img.width; c.height = img.height;
+        c.getContext('2d')!.drawImage(img, 0, 0);
+        resolve(c.toDataURL('image/png'));
+      };
+      img.onerror = () => resolve(''); // fallback: empty = skip
+      img.src = src;
+    });
+
+  const generatePDF = async () => {
+    const [firmaDataUrl, selloDataUrl] = await Promise.all([
+      imgToDataUrl('/firma.png'),
+      imgToDataUrl('/sello.jpeg'),
+    ]);
+
     const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
     const w = pdf.internal.pageSize.getWidth();
     const h = pdf.internal.pageSize.getHeight();
@@ -430,58 +450,19 @@ const CertificateView: React.FC<{
     pdf.setTextColor(60, 60, 60);
     pdf.text(currentDate, 60, fY + 11, { align: 'center' });
 
-    // — Official Seal —
+    // — Official Seal (real image) —
     const sX = w / 2, sY = fY - 12;
-    pdf.setDrawColor(1, 80, 125);
-    (pdf as any).setLineWidth(1.3);
-    (pdf as any).circle(sX, sY, 24, 'S');
-    for (let a = 0; a < 360; a += 22.5) {
-      const r = a * Math.PI / 180;
-      (pdf as any).setLineWidth(0.5);
-      pdf.line(sX + 21.5*Math.cos(r), sY + 21.5*Math.sin(r), sX + 24*Math.cos(r), sY + 24*Math.sin(r));
+    const selloSize = 46;
+    if (selloDataUrl) {
+      (pdf as any).addImage(selloDataUrl, 'PNG', sX - selloSize / 2, sY - selloSize / 2, selloSize, selloSize);
     }
-    pdf.setDrawColor(1, 80, 125);
-    (pdf as any).setLineWidth(0.4);
-    (pdf as any).circle(sX, sY, 19, 'S');
-    pdf.setDrawColor(184, 152, 61);
-    (pdf as any).setLineWidth(0.7);
-    (pdf as any).circle(sX, sY, 18, 'S');
 
-    (pdf as any).setFont('helvetica', 'bold');
-    drawSealArcText(pdf as any, '\u00b7 ACADEMIA LOVIRTUAL \u00b7', sX, sY, 15.5, -152, -28, 5.2, [1,80,125]);
-    (pdf as any).setFont('helvetica', 'normal');
-    drawSealArcText(pdf as any, '\u00b7 CERTIFICADO OFICIAL \u00b7', sX, sY, 15.5, 28, 152, 4.5, [1,80,125]);
-
-    [[0,-18],[18,0],[0,18],[-18,0]].forEach(([dx,dy]) => {
-      pdf.setFillColor(184, 152, 61);
-      (pdf as any).circle(sX+dx, sY+dy, 1.1, 'F');
-    });
-
-    pdf.setDrawColor(184, 152, 61);
-    (pdf as any).setLineWidth(0.5);
-    pdf.line(sX-8, sY-5, sX+8, sY-5);
-    pdf.line(sX-8, sY+4.5, sX+8, sY+4.5);
-
-    (pdf as any).setFont('times', 'bold');
-    pdf.setFontSize(13);
-    pdf.setTextColor(1, 80, 125);
-    pdf.text('LV', sX, sY + 2.5, { align: 'center' });
-
-    (pdf as any).setFont('helvetica', 'bold');
-    pdf.setFontSize(4);
-    pdf.setTextColor(201, 162, 39);
-    pdf.text('L L C', sX, sY + 8, { align: 'center' });
-
-    // — Cursive Signature —
+    // — Real Signature image —
     const sigX = w - 60;
-    const sigOriginX = sigX - 28, sigOriginY = fY - 18;
-    pdf.setDrawColor(20, 20, 60);
-    (pdf as any).setLineWidth(0.55);
-    (pdf as any).lines([
-      [5,-8],[6,-4],[4,6],[5,-10],[6,-5],[4,8],[5,-3],[8,-6],[5,5],[5,-8],[4,-2],[6,7],[3,2],
-    ], sigOriginX, sigOriginY, [1,1], 'S', false);
-    (pdf as any).setLineWidth(0.35);
-    (pdf as any).lines([[8,1],[12,0],[8,1],[5,-1],[4,0]], sigOriginX+2, sigOriginY+8, [1,1], 'S', false);
+    const firmaW = 58, firmaH = 26;
+    if (firmaDataUrl) {
+      (pdf as any).addImage(firmaDataUrl, 'PNG', sigX - firmaW / 2, fY - firmaH - 2, firmaW, firmaH);
+    }
 
     pdf.setDrawColor(1, 80, 125);
     (pdf as any).setLineWidth(0.5);
@@ -602,64 +583,25 @@ const CertificateView: React.FC<{
                       </div>
                     </div>
 
-                    {/* Center: Official Seal SVG */}
+                    {/* Center: Sello oficial real */}
                     <div className="flex justify-center">
-                      <svg viewBox="-30 -30 60 60" className="w-24 h-24 sm:w-28 sm:h-28">
-                        {/* Outer ring */}
-                        <circle cx="0" cy="0" r="27" fill="none" stroke="#01507d" strokeWidth="1.5" />
-                        {/* Tick marks */}
-                        {Array.from({ length: 16 }).map((_, i) => {
-                          const a = (i * 22.5 * Math.PI) / 180;
-                          return (
-                            <line key={i}
-                              x1={21.5 * Math.cos(a)} y1={21.5 * Math.sin(a)}
-                              x2={27 * Math.cos(a)}   y2={27 * Math.sin(a)}
-                              stroke="#01507d" strokeWidth="0.5" />
-                          );
-                        })}
-                        {/* Inner rings */}
-                        <circle cx="0" cy="0" r="19" fill="none" stroke="#01507d" strokeWidth="0.5" />
-                        <circle cx="0" cy="0" r="18" fill="none" stroke="#b8983d" strokeWidth="0.8" />
-                        {/* Top arc text */}
-                        <defs>
-                          <path id="topArc" d="M -16 -9 A 18.5 18.5 0 0 1 16 -9" />
-                          <path id="botArc" d="M -14 10 A 18.5 18.5 0 0 0 14 10" />
-                        </defs>
-                        <text fontSize="3.3" fontFamily="sans-serif" fontWeight="bold" fill="#01507d" letterSpacing="0.8">
-                          <textPath href="#topArc" startOffset="50%" textAnchor="middle">· ACADEMIA LOVIRTUAL ·</textPath>
-                        </text>
-                        <text fontSize="3" fontFamily="sans-serif" fill="#01507d" letterSpacing="0.5">
-                          <textPath href="#botArc" startOffset="50%" textAnchor="middle">· CERTIFICADO OFICIAL ·</textPath>
-                        </text>
-                        {/* Cardinal gold dots */}
-                        {[[0,-18],[18,0],[0,18],[-18,0]].map(([dx,dy],i) => (
-                          <circle key={i} cx={dx} cy={dy} r="1.2" fill="#b8983d" />
-                        ))}
-                        {/* Flanking lines */}
-                        <line x1="-8" y1="-5" x2="8" y2="-5" stroke="#b8983d" strokeWidth="0.5" />
-                        <line x1="-8" y1="4.5" x2="8" y2="4.5" stroke="#b8983d" strokeWidth="0.5" />
-                        {/* LV Monogram */}
-                        <text x="0" y="3" textAnchor="middle" fontSize="10" fontFamily="serif" fontWeight="bold" fill="#01507d">LV</text>
-                        {/* LLC */}
-                        <text x="0" y="8.5" textAnchor="middle" fontSize="3" fontFamily="sans-serif" fontWeight="bold" fill="#c9a227" letterSpacing="1">LLC</text>
-                      </svg>
+                      <img
+                        src="/sello.jpeg"
+                        alt="Sello oficial LoVirtual"
+                        className="w-24 h-24 sm:w-28 sm:h-28 object-contain"
+                        style={{ mixBlendMode: 'multiply' }}
+                      />
                     </div>
 
-                    {/* Right: Signature */}
+                    {/* Right: Firma real */}
                     <div className="text-center">
                       <div className="flex items-end justify-center mb-1" style={{ height: '4rem' }}>
-                        <svg viewBox="0 0 160 55" className="w-32 sm:w-40 h-12 sm:h-14">
-                          {/* Cursive signature path */}
-                          <path
-                            d="M8,42 C14,22 24,14 36,26 C44,34 46,16 58,18 C68,20 72,30 84,22 C94,15 100,24 114,18 C120,15 126,26 134,22 C139,19 144,30 150,26"
-                            fill="none" stroke="#14143c" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"
-                          />
-                          {/* Underline flourish */}
-                          <path
-                            d="M28,38 C50,35 85,36 118,37"
-                            fill="none" stroke="#14143c" strokeWidth="0.7" strokeLinecap="round"
-                          />
-                        </svg>
+                        <img
+                          src="/firma.png"
+                          alt="Firma Dirección Académica"
+                          className="w-36 sm:w-44 h-14 object-contain"
+                          style={{ mixBlendMode: 'multiply' }}
+                        />
                       </div>
                       <div className="border-t border-[#01507d] pt-2 mx-1 sm:mx-3">
                         <p className="text-[8px] sm:text-[10px] font-sans text-gray-400 uppercase tracking-wider">Dirección Académica</p>
