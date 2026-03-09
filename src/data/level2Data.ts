@@ -271,3 +271,98 @@ export const level2Modules: Level2Module[] = [
     },
   },
 ];
+
+export interface Level2ExamQuestion {
+  id: number;
+  question: string;
+  options: string[];
+  correctAnswer: number;
+}
+
+export const level2FinalExamQuestions: Level2ExamQuestion[] = [
+  {
+    id: 1,
+    question: "¿Qué técnica implica usar la salida de un prompt como entrada para el siguiente, creando un flujo secuencial?",
+    options: ["Zero-Shot Prompting", "Prompt Chaining (Encadenamiento)", "Fine-tuning del modelo", "RAG (Retrieval-Augmented Generation)"],
+    correctAnswer: 1,
+  },
+  {
+    id: 2,
+    question: "Al crear un GPT personalizado, ¿qué ventaja principal ofrece subir documentos a la Base de Conocimiento?",
+    options: [
+      "Acelera la velocidad de respuesta del modelo",
+      "La IA prioriza esa información privada y reduce alucinaciones",
+      "Permite al GPT acceder a internet en tiempo real",
+      "Cambia el avatar del asistente automáticamente",
+    ],
+    correctAnswer: 1,
+  },
+  {
+    id: 3,
+    question: "¿Cuál es el formato de archivo más recomendado y ligero para subir bases de datos planas a ChatGPT para análisis?",
+    options: ["PDF", "DOCX", "CSV (Valores separados por comas)", "PPTX"],
+    correctAnswer: 2,
+  },
+  {
+    id: 4,
+    question: "En el mundo de las automatizaciones (Zapier/Make), ¿cómo se le llama al evento inicial que arranca un flujo de trabajo?",
+    options: ["Action (Acción)", "Webhook", "Trigger (Disparador)", "API Endpoint"],
+    correctAnswer: 2,
+  },
+  {
+    id: 5,
+    question: "¿Qué herramienta es especialista en crear avatares/voceros virtuales con sincronización labial (lip-sync)?",
+    options: ["Midjourney", "CapCut", "HeyGen", "Notion AI"],
+    correctAnswer: 2,
+  },
+  {
+    id: 6,
+    question: "¿Qué significan las siglas del framework de copywriting AIDA?",
+    options: [
+      "Análisis, Identificación, Datos, Aprobación",
+      "Alcance, Interacción, Dinamismo, Audiencia",
+      "Atención, Interés, Deseo, Acción",
+      "Agitación, Impulso, Demanda, Acción",
+    ],
+    correctAnswer: 2,
+  },
+  {
+    id: 7,
+    question: "¿Cuál es una función clave de Notion AI dentro de las bases de datos?",
+    options: [
+      "Crear videos automáticos",
+      "Autocompletar propiedades y extraer resúmenes automáticamente",
+      "Diseñar logos corporativos",
+      "Enviar correos masivos",
+    ],
+    correctAnswer: 1,
+  },
+  {
+    id: 8,
+    question: "¿Qué elemento es indispensable para conectar Google Apps Script con los servicios de OpenAI?",
+    options: ["Un correo de Gmail premium", "Un framework AIDA", "La API Key (Clave de API)", "Un archivo PDF"],
+    correctAnswer: 2,
+  },
+  {
+    id: 9,
+    question: "En el desarrollo con herramientas como Lovable, ¿qué rol cumple un servicio como Supabase?",
+    options: [
+      "Es un generador de imágenes con IA",
+      "Es el motor que crea el diseño visual (Frontend)",
+      "Funciona como el Backend y Base de Datos",
+      "Sirve para editar videos automáticamente",
+    ],
+    correctAnswer: 2,
+  },
+  {
+    id: 10,
+    question: "En el framework PAS de copywriting, ¿qué significa la 'A' (Agitación)?",
+    options: [
+      "Presentar la solución de forma directa",
+      "Explicar por qué el problema es grave e intensificar el dolor",
+      "Llamar la atención del lector con un titular impactante",
+      "Agregar un llamado a la acción urgente",
+    ],
+    correctAnswer: 1,
+  },
+];
