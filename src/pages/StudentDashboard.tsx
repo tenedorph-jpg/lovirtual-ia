@@ -207,47 +207,6 @@ const StudentDashboard: React.FC = () => {
             </div>
           )}
         </div>
-        {/* Final Exam Section */}
-        <div className="lovirtual-card">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="p-4 rounded-xl bg-warning/10">
-                <Trophy className="w-8 h-8 text-warning" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-foreground">Examen Final y Certificación</h3>
-                <p className="text-muted-foreground">
-                  Completa los 10 módulos para desbloquear el examen final
-                </p>
-              </div>
-            </div>
-            <Button
-              size="lg"
-              disabled={!allModulesCompleted}
-              onClick={() => navigate('/final-exam')}
-              className={allModulesCompleted ? 'lovirtual-gradient-bg text-white animate-pulse-glow' : ''}
-            >
-              {allModulesCompleted ? (
-                currentStudent.certificateGenerated ? (
-                  <>
-                    <Award className="w-5 h-5 mr-2" />
-                    Ver Certificado
-                  </>
-                ) : (
-                  <>
-                    <Trophy className="w-5 h-5 mr-2" />
-                    Tomar Examen Final
-                  </>
-                )
-              ) : (
-                <>
-                  <Lock className="w-5 h-5 mr-2" />
-                  {completedModules}/{totalModules} Módulos
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
       </main>
     </div>
   );
