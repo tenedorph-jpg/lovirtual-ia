@@ -62,6 +62,7 @@ const AppRoutes = () => (
     <Route path="/admin" element={<ProtectedRoute requireAdmin><AdminDashboard /></ProtectedRoute>} />
     <Route path="/dashboard" element={<ProtectedRoute><StudentDashboard /></ProtectedRoute>} />
     <Route path="/module/:moduleId" element={<ProtectedRoute><ModulePage /></ProtectedRoute>} />
+    <Route path="/level-2" element={<ProtectedRoute><Level2Page /></ProtectedRoute>} />
     <Route path="/final-exam" element={<ProtectedRoute><FinalExamPage /></ProtectedRoute>} />
     <Route path="/reset-password" element={<ResetPasswordPage />} />
     <Route path="*" element={<NotFound />} />
