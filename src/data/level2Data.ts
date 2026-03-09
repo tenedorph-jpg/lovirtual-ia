@@ -116,6 +116,11 @@ export const level2Modules: Level2Module[] = [
       "Una vez que tus datos están limpios, puedes pedirle a la IA que genere gráficos y visualizaciones directamente desde archivos CSV o tablas de Excel. Herramientas como ChatGPT con Code Interpreter o Claude pueden crear gráficos de barras, líneas de tendencia y diagramas de pastel con un solo prompt bien estructurado.",
       "El paso final es la generación de reportes ejecutivos. Un buen prompt puede transformar una tabla de datos crudos en un resumen narrativo con conclusiones clave, recomendaciones y próximos pasos. Dominar esta habilidad te convierte en alguien que no solo presenta datos, sino que cuenta historias con ellos.",
     ],
+    quiz: {
+      question: "¿Cuál es el beneficio principal de limpiar datos antes de analizarlos con IA?",
+      options: ["Que los gráficos se vean más bonitos", "Que los resultados sean precisos y confiables", "Que el proceso sea más lento pero seguro", "Que se reduzca el tamaño del archivo"],
+      correctAnswer: "Que los resultados sean precisos y confiables",
+    },
   },
   {
     id: 4,
@@ -132,6 +137,11 @@ export const level2Modules: Level2Module[] = [
       "Por ejemplo, puedes crear un flujo donde cada vez que recibes un correo en Gmail con un archivo adjunto, automáticamente se guarde en Google Drive, se extraiga el texto con IA y se agregue un resumen a una base de datos en Notion. Todo sin intervención humana.",
       "Los asistentes virtuales automatizados son el siguiente nivel: combinando WhatsApp Business, OpenAI y Make, puedes crear un chatbot que responda preguntas frecuentes de clientes, agende citas y escale casos complejos a un humano. La clave está en diseñar el flujo conversacional antes de implementarlo.",
     ],
+    quiz: {
+      question: "¿Qué herramienta actúa como puente entre aplicaciones para crear flujos automáticos sin código?",
+      options: ["Google Docs", "Zapier / Make", "Microsoft Paint", "WordPress"],
+      correctAnswer: "Zapier / Make",
+    },
   },
   {
     id: 5,
@@ -148,6 +158,11 @@ export const level2Modules: Level2Module[] = [
       "La sincronización labial (lip-sync) con IA es una tecnología que ajusta los movimientos de la boca de un avatar o persona real para que coincidan perfectamente con un audio nuevo. Combinado con la clonación de voz, puedes crear un video donde 'tú' hablas en japonés, aunque nunca hayas estudiado ese idioma.",
       "Para la post-producción, CapCut integra funciones de IA como la eliminación automática de silencios, subtítulos generados automáticamente y efectos de transición inteligentes. El flujo completo —desde el guion generado por IA hasta el video final editado— puede completarse en menos de una hora.",
     ],
+    quiz: {
+      question: "¿Qué tecnología permite que un avatar mueva los labios de forma sincronizada con un audio nuevo?",
+      options: ["Rendering 3D manual", "Lip-sync con IA", "Edición fotograma a fotograma", "Captura de movimiento con sensores"],
+      correctAnswer: "Lip-sync con IA",
+    },
   },
   {
     id: 6,
@@ -164,6 +179,11 @@ export const level2Modules: Level2Module[] = [
       "Para generar hilos de redes sociales o secuencias de correos electrónicos, la clave es proporcionarle a la IA el contexto del público objetivo, el tono deseado y el objetivo de conversión. Un prompt como 'Actúa como un copywriter experto en B2B SaaS. Escribe una secuencia de 5 correos usando el framework AIDA para vender un CRM a directores de ventas' produce resultados significativamente mejores que 'Escribe correos de venta'.",
       "El mayor error al usar IA para redacción es no humanizar el resultado. Los textos generados tienden a usar frases genéricas y estructuras predecibles. Tu trabajo es inyectar anécdotas reales, datos específicos de tu industria y un tono conversacional que rompa el patrón robótico. La IA es tu borrador inicial, no tu versión final.",
     ],
+    quiz: {
+      question: "¿Qué significa la sigla PAS en el contexto de copywriting?",
+      options: ["Producción, Análisis, Seguimiento", "Problema, Agitación, Solución", "Planificación, Acción, Sistema", "Producto, Audiencia, Segmento"],
+      correctAnswer: "Problema, Agitación, Solución",
+    },
   },
   {
     id: 7,
@@ -180,6 +200,11 @@ export const level2Modules: Level2Module[] = [
       "Una de las funciones más poderosas es la generación automática de minutas. Después de una reunión, puedes pegar las notas crudas y pedirle a la IA que extraiga: decisiones tomadas, tareas asignadas (con responsable y fecha límite) y temas pendientes. Esto elimina la ambigüedad post-reunión que tantos proyectos sufren.",
       "La asignación inteligente de tareas va un paso más allá: analizando el historial de carga de trabajo del equipo, las habilidades de cada miembro y los plazos del proyecto, la IA puede sugerir la distribución óptima de nuevas tareas. Aunque la decisión final es humana, tener una recomendación basada en datos mejora significativamente la planificación.",
     ],
+    quiz: {
+      question: "¿Qué puede extraer Notion AI automáticamente de las notas crudas de una reunión?",
+      options: ["Solo los nombres de los asistentes", "Decisiones tomadas, tareas asignadas y temas pendientes", "El horario de la próxima reunión", "Las emociones de los participantes"],
+      correctAnswer: "Decisiones tomadas, tareas asignadas y temas pendientes",
+    },
   },
   {
     id: 8,
@@ -196,6 +221,11 @@ export const level2Modules: Level2Module[] = [
       "Google Apps Script te permite llamar a la API de OpenAI directamente desde Google Sheets. Esto significa que puedes crear una función personalizada donde escribes un prompt en una celda y la respuesta de la IA aparece automáticamente en otra celda. Imagina clasificar cientos de comentarios de clientes, generar descripciones de productos o traducir contenido, todo desde tu hoja de cálculo.",
       "La clave técnica es entender tres conceptos: el endpoint (la URL a la que envías tu petición), el método HTTP (GET para obtener datos, POST para enviar datos) y la autenticación (tu API key que identifica quién eres). Con Apps Script, todo esto se maneja con la función UrlFetchApp.fetch(), y la IA misma puede ayudarte a escribir el código.",
     ],
+    quiz: {
+      question: "¿Qué función de Google Apps Script se usa para hacer llamadas a APIs externas como OpenAI?",
+      options: ["SpreadsheetApp.open()", "UrlFetchApp.fetch()", "DriveApp.getFiles()", "HtmlService.create()"],
+      correctAnswer: "UrlFetchApp.fetch()",
+    },
   },
   {
     id: 9,
@@ -212,6 +242,11 @@ export const level2Modules: Level2Module[] = [
       "Supabase es una plataforma de backend que te permite crear tablas de datos, gestionar usuarios y establecer reglas de seguridad sin necesidad de configurar servidores. Piensa en ello como una hoja de cálculo superpotente que vive en la nube y a la que tu aplicación puede acceder en tiempo real.",
       "Lo fascinante de combinar Lovable con datos reales es que la IA puede generar interfaces completas —tablas, formularios, dashboards— directamente a partir de la estructura de tus datos. Describes lo que necesitas, y la IA crea componentes React funcionales que leen y escriben en tu base de datos automáticamente.",
     ],
+    quiz: {
+      question: "¿Cuál es la función principal del Backend en una aplicación web?",
+      options: ["Diseñar los colores y tipografías", "Almacenar datos y ejecutar lógica de negocio", "Mostrar botones e imágenes al usuario", "Optimizar el SEO del sitio"],
+      correctAnswer: "Almacenar datos y ejecutar lógica de negocio",
+    },
   },
   {
     id: 10,
