@@ -200,6 +200,11 @@ export const level2Modules: Level2Module[] = [
       "Una de las funciones más poderosas es la generación automática de minutas. Después de una reunión, puedes pegar las notas crudas y pedirle a la IA que extraiga: decisiones tomadas, tareas asignadas (con responsable y fecha límite) y temas pendientes. Esto elimina la ambigüedad post-reunión que tantos proyectos sufren.",
       "La asignación inteligente de tareas va un paso más allá: analizando el historial de carga de trabajo del equipo, las habilidades de cada miembro y los plazos del proyecto, la IA puede sugerir la distribución óptima de nuevas tareas. Aunque la decisión final es humana, tener una recomendación basada en datos mejora significativamente la planificación.",
     ],
+    quiz: {
+      question: "¿Qué puede extraer Notion AI automáticamente de las notas crudas de una reunión?",
+      options: ["Solo los nombres de los asistentes", "Decisiones tomadas, tareas asignadas y temas pendientes", "El horario de la próxima reunión", "Las emociones de los participantes"],
+      correctAnswer: "Decisiones tomadas, tareas asignadas y temas pendientes",
+    },
   },
   {
     id: 8,
