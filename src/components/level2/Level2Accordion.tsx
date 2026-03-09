@@ -27,9 +27,9 @@ const Level2Accordion: React.FC<Props> = ({ modules, completedModules, onModuleC
     return 'locked';
   };
 
-  const handleQuizComplete = () => {
+  const handleQuizComplete = (score: number) => {
     if (activeQuizModule && onModuleComplete) {
-      onModuleComplete(activeQuizModule.id);
+      onModuleComplete(activeQuizModule.id, score);
     }
   };
 

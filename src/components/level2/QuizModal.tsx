@@ -32,7 +32,7 @@ const QuizModal: React.FC<Props> = ({ open, onOpenChange, moduleTitle, quiz, onC
     if (!selected) return;
     setSubmitted(true);
     if (selected === quiz.correctAnswer && onCorrectAnswer) {
-      onCorrectAnswer();
+      onCorrectAnswer(100);
     }
   };
 
