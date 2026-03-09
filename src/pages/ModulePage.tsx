@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { courseModules } from '@/data/courseModules';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
+import { generateCertificatePDF } from '@/lib/generateCertificate';
 import {
   ArrowLeft,
   ArrowRight,
@@ -17,6 +18,7 @@ import {
   Sparkles,
   Brain,
   Loader2,
+  Download,
 } from 'lucide-react';
 
 interface ClaudeEvaluation {
@@ -39,6 +41,7 @@ const ModulePage: React.FC = () => {
   const [quizSubmitted, setQuizSubmitted] = useState(false);
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [claudeEval, setClaudeEval] = useState<ClaudeEvaluation | null>(null);
+  const [isGeneratingCert, setIsGeneratingCert] = useState(false);
 
   const module = courseModules.find(m => m.id === parseInt(moduleId || '0'));
 
@@ -401,6 +404,26 @@ const ModulePage: React.FC = () => {
                       </ul>
                     )}
                   </div>
+                )}
+
+                {/* Certificate download button — Module 10 only */}
+                {isModule10 && passed && (
+                  <Button
+                    size="lg"
+                    onClick={async () => {
+                      setIsGeneratingCert(true);
+                      await generateCertificatePDF(currentStudent?.name ?? 'Estudiante', score);
+                      setIsGeneratingCert(false);
+                    }}
+                    disabled={isGeneratingCert}
+                    className="lovirtual-gradient-bg text-white gap-2 mt-2 mb-4"
+                  >
+                    {isGeneratingCert ? (
+                      <><Loader2 className="w-4 h-4 animate-spin" />Generando certificado...</>
+                    ) : (
+                      <><Download className="w-4 h-4" />Descargar Certificado</>
+                    )}
+                  </Button>
                 )}
 
                 <p className="text-sm text-muted-foreground mb-8">
