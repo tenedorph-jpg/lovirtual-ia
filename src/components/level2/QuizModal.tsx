@@ -14,7 +14,7 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   moduleTitle: string;
   quiz: Quiz;
-  onCorrectAnswer?: () => void;
+  onCorrectAnswer?: (score: number) => void;
 }
 
 const QuizModal: React.FC<Props> = ({ open, onOpenChange, moduleTitle, quiz, onCorrectAnswer }) => {
