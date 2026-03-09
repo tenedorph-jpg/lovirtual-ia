@@ -63,25 +63,11 @@ export const cursosData: Record<string, CourseData> = {
     ],
   },
   nivel2: {
-    kpis: { inscritos: 126, finalizados: 10, tasa: "8%", pendientes: 116 },
-    distribucion: [
-      { perfil: "Administrativo Bilingüe", cantidad: 11, fill: COLORS[4] },
-      { perfil: "Administrativo", cantidad: 35, fill: COLORS[1] },
-    ],
-    tiempoPromedio: [
-      { perfil: "Administrativo", horas: 5.2 },
-      { perfil: "Admin. Bilingüe", horas: 4.1 },
-    ],
-    puntuacionPromedio: [
-      { perfil: "Administrativo Bilingüe", puntuacion: 9.2 },
-      { perfil: "Administrativo", puntuacion: 7.8 },
-    ],
-    errores: [
-      { perfil: "Administrativo", tasa: "22%" },
-      { perfil: "Administrativo Bilingüe", tasa: "8%" },
-    ],
-    estudiantes: [
-      { id: 2, nombre: "María Rivero", perfil: "admin_bilingue", progreso: 20, puntuacion: "-%", actividad: "2026-03-09", certificado: "Pendiente" },
-    ],
+    kpis: { inscritos: 0, finalizados: 0, tasa: "0%", pendientes: 0 },
+    distribucion: [],
+    tiempoPromedio: [],
+    puntuacionPromedio: [],
+    errores: [],
+    estudiantes: [],
   },
 };
