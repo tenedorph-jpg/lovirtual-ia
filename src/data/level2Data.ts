@@ -111,6 +111,11 @@ export const level2Modules: Level2Module[] = [
       "Creación de gráficos a partir de CSVs.",
       "Generación de reportes ejecutivos.",
     ],
+    educationalContent: [
+      "En el mundo empresarial, los datos son el activo más valioso, pero solo si están limpios y organizados. La IA puede ayudarte a detectar valores duplicados, corregir formatos inconsistentes y rellenar campos vacíos en segundos, tareas que manualmente tomarían horas.",
+      "Una vez que tus datos están limpios, puedes pedirle a la IA que genere gráficos y visualizaciones directamente desde archivos CSV o tablas de Excel. Herramientas como ChatGPT con Code Interpreter o Claude pueden crear gráficos de barras, líneas de tendencia y diagramas de pastel con un solo prompt bien estructurado.",
+      "El paso final es la generación de reportes ejecutivos. Un buen prompt puede transformar una tabla de datos crudos en un resumen narrativo con conclusiones clave, recomendaciones y próximos pasos. Dominar esta habilidad te convierte en alguien que no solo presenta datos, sino que cuenta historias con ellos.",
+    ],
   },
   {
     id: 4,
@@ -121,6 +126,11 @@ export const level2Modules: Level2Module[] = [
       "Introducción a Zapier y Make.",
       "Conectando Gmail, Notion y OpenAI.",
       "Casos de uso para asistentes virtuales.",
+    ],
+    educationalContent: [
+      "La automatización sin código (No-Code Automation) permite crear flujos de trabajo complejos sin escribir una sola línea de programación. Plataformas como Zapier y Make (antes Integromat) actúan como puentes entre tus aplicaciones favoritas, ejecutando acciones automáticas cuando se cumple una condición.",
+      "Por ejemplo, puedes crear un flujo donde cada vez que recibes un correo en Gmail con un archivo adjunto, automáticamente se guarde en Google Drive, se extraiga el texto con IA y se agregue un resumen a una base de datos en Notion. Todo sin intervención humana.",
+      "Los asistentes virtuales automatizados son el siguiente nivel: combinando WhatsApp Business, OpenAI y Make, puedes crear un chatbot que responda preguntas frecuentes de clientes, agende citas y escale casos complejos a un humano. La clave está en diseñar el flujo conversacional antes de implementarlo.",
     ],
   },
   {
@@ -133,6 +143,11 @@ export const level2Modules: Level2Module[] = [
       "Sincronización labial y clonación de voz.",
       "Edición rápida con IA en CapCut.",
     ],
+    educationalContent: [
+      "La creación de video con IA ha democratizado la producción audiovisual. Herramientas como HeyGen permiten generar videos con avatares realistas que hablan en múltiples idiomas, ideal para capacitaciones corporativas, tutoriales de producto o contenido de marketing sin necesidad de cámaras ni actores.",
+      "La sincronización labial (lip-sync) con IA es una tecnología que ajusta los movimientos de la boca de un avatar o persona real para que coincidan perfectamente con un audio nuevo. Combinado con la clonación de voz, puedes crear un video donde 'tú' hablas en japonés, aunque nunca hayas estudiado ese idioma.",
+      "Para la post-producción, CapCut integra funciones de IA como la eliminación automática de silencios, subtítulos generados automáticamente y efectos de transición inteligentes. El flujo completo —desde el guion generado por IA hasta el video final editado— puede completarse en menos de una hora.",
+    ],
   },
   {
     id: 6,
@@ -143,6 +158,11 @@ export const level2Modules: Level2Module[] = [
       "Frameworks PAS y AIDA con IA.",
       "Generación de hilos y secuencias de correos.",
       "Evitar el tono 'robótico'.",
+    ],
+    educationalContent: [
+      "El copywriting con IA no se trata de pedirle al modelo que 'escriba algo bonito'. Se trata de darle un framework probado y dejar que lo ejecute con precisión. Los dos frameworks más efectivos son PAS (Problema → Agitación → Solución) y AIDA (Atención → Interés → Deseo → Acción).",
+      "Para generar hilos de redes sociales o secuencias de correos electrónicos, la clave es proporcionarle a la IA el contexto del público objetivo, el tono deseado y el objetivo de conversión. Un prompt como 'Actúa como un copywriter experto en B2B SaaS. Escribe una secuencia de 5 correos usando el framework AIDA para vender un CRM a directores de ventas' produce resultados significativamente mejores que 'Escribe correos de venta'.",
+      "El mayor error al usar IA para redacción es no humanizar el resultado. Los textos generados tienden a usar frases genéricas y estructuras predecibles. Tu trabajo es inyectar anécdotas reales, datos específicos de tu industria y un tono conversacional que rompa el patrón robótico. La IA es tu borrador inicial, no tu versión final.",
     ],
   },
   {
@@ -155,6 +175,11 @@ export const level2Modules: Level2Module[] = [
       "Autocompletado de bases de datos y minutas.",
       "Asignación inteligente de tareas.",
     ],
+    educationalContent: [
+      "Notion AI transforma tu espacio de trabajo de una simple herramienta de organización a un asistente de productividad inteligente. Puede resumir documentos largos, generar planes de acción a partir de notas de reuniones y autocompletar campos en bases de datos basándose en patrones existentes.",
+      "Una de las funciones más poderosas es la generación automática de minutas. Después de una reunión, puedes pegar las notas crudas y pedirle a la IA que extraiga: decisiones tomadas, tareas asignadas (con responsable y fecha límite) y temas pendientes. Esto elimina la ambigüedad post-reunión que tantos proyectos sufren.",
+      "La asignación inteligente de tareas va un paso más allá: analizando el historial de carga de trabajo del equipo, las habilidades de cada miembro y los plazos del proyecto, la IA puede sugerir la distribución óptima de nuevas tareas. Aunque la decisión final es humana, tener una recomendación basada en datos mejora significativamente la planificación.",
+    ],
   },
   {
     id: 8,
@@ -166,6 +191,11 @@ export const level2Modules: Level2Module[] = [
       "Llamadas a la API de OpenAI desde Google Sheets.",
       "Funciones personalizadas con IA.",
     ],
+    educationalContent: [
+      "Una API (Interfaz de Programación de Aplicaciones) es simplemente una forma estandarizada en que dos programas se comunican entre sí. Piensa en ella como un mesero en un restaurante: tú (tu aplicación) haces un pedido, el mesero (la API) lo lleva a la cocina (el servidor) y te trae la respuesta. No necesitas saber cocinar; solo necesitas saber pedir.",
+      "Google Apps Script te permite llamar a la API de OpenAI directamente desde Google Sheets. Esto significa que puedes crear una función personalizada donde escribes un prompt en una celda y la respuesta de la IA aparece automáticamente en otra celda. Imagina clasificar cientos de comentarios de clientes, generar descripciones de productos o traducir contenido, todo desde tu hoja de cálculo.",
+      "La clave técnica es entender tres conceptos: el endpoint (la URL a la que envías tu petición), el método HTTP (GET para obtener datos, POST para enviar datos) y la autenticación (tu API key que identifica quién eres). Con Apps Script, todo esto se maneja con la función UrlFetchApp.fetch(), y la IA misma puede ayudarte a escribir el código.",
+    ],
   },
   {
     id: 9,
@@ -176,6 +206,11 @@ export const level2Modules: Level2Module[] = [
       "Entendiendo el Frontend vs Backend.",
       "Introducción a Supabase (Tablas básicas).",
       "Cómo la IA genera interfaces a partir de datos.",
+    ],
+    educationalContent: [
+      "Toda aplicación moderna tiene dos partes: el Frontend (lo que el usuario ve y toca) y el Backend (donde se almacenan los datos y se ejecuta la lógica del negocio). Lovable te permite construir el frontend completo con IA, pero para que tu aplicación sea realmente funcional, necesitas conectarla a datos reales.",
+      "Supabase es una plataforma de backend que te permite crear tablas de datos, gestionar usuarios y establecer reglas de seguridad sin necesidad de configurar servidores. Piensa en ello como una hoja de cálculo superpotente que vive en la nube y a la que tu aplicación puede acceder en tiempo real.",
+      "Lo fascinante de combinar Lovable con datos reales es que la IA puede generar interfaces completas —tablas, formularios, dashboards— directamente a partir de la estructura de tus datos. Describes lo que necesitas, y la IA crea componentes React funcionales que leen y escriben en tu base de datos automáticamente.",
     ],
   },
   {
