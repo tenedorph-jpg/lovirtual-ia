@@ -6,10 +6,19 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { jsPDF } from 'jspdf';
 import ThemeToggle from '@/components/ThemeToggle';
+import { supabase } from '@/integrations/supabase/client';
 import {
   ArrowLeft, ArrowRight, CheckCircle, XCircle, Trophy,
-  Award, Download, MessageCircle, Sparkles,
+  Award, Download, MessageCircle, Sparkles, Brain, Loader2,
 } from 'lucide-react';
+
+interface ClaudeEvaluation {
+  approved: boolean;
+  score: number;
+  verdict: string;
+  feedback: string;
+  details: string[];
+}
 
 const FinalExamPage: React.FC = () => {
   const navigate = useNavigate();
@@ -22,6 +31,8 @@ const FinalExamPage: React.FC = () => {
   const [examSubmitted, setExamSubmitted] = useState(false);
   const [studentName, setStudentName] = useState(currentStudent?.name || '');
   const [nameConfirmed, setNameConfirmed] = useState(false);
+  const [isEvaluating, setIsEvaluating] = useState(false);
+  const [claudeEval, setClaudeEval] = useState<ClaudeEvaluation | null>(null);
 
   if (!currentStudent) {
     navigate('/');
@@ -48,11 +59,44 @@ const FinalExamPage: React.FC = () => {
     return Math.round((correct / finalExamQuestions.length) * 100);
   };
 
-  const handleSubmitExam = () => {
-    const score = calculateScore();
+  const handleSubmitExam = async () => {
+    setIsEvaluating(true);
     setExamSubmitted(true);
+
+    // Call Claude via Supabase Edge Function
+    let evaluation: ClaudeEvaluation | null = null;
+    try {
+      const { data, error } = await supabase.functions.invoke('evaluate-exam', {
+        body: {
+          questions: finalExamQuestions,
+          selectedAnswers,
+          studentName,
+          examType: 'final',
+        },
+      });
+      if (!error && data) evaluation = data as ClaudeEvaluation;
+    } catch {
+      // Fallback to local score if edge function fails
+    }
+
+    // Fallback if Claude unavailable
+    if (!evaluation) {
+      const rawScore = calculateScore();
+      evaluation = {
+        approved: rawScore >= 70,
+        score: rawScore,
+        verdict: rawScore >= 70 ? 'APROBADO' : 'NO APROBADO',
+        feedback: rawScore >= 70
+          ? `¡Felicitaciones, ${studentName}! Has demostrado un sólido dominio del material.`
+          : `${studentName}, necesitas repasar algunos conceptos. ¡Tú puedes lograrlo!`,
+        details: [],
+      };
+    }
+
+    setClaudeEval(evaluation);
+    setIsEvaluating(false);
     setShowResults(true);
-    setFinalExamScore(score);
+    setFinalExamScore(evaluation.score);
   };
 
   const handleConfirmName = () => {
@@ -60,8 +104,8 @@ const FinalExamPage: React.FC = () => {
   };
 
   const allQuestionsAnswered = finalExamQuestions.every(q => selectedAnswers[q.id] !== undefined);
-  const score = calculateScore();
-  const passed = score >= 70;
+  const score = claudeEval?.score ?? calculateScore();
+  const passed = claudeEval ? claudeEval.approved : score >= 70;
 
   if (!examStarted) {
     return (
@@ -139,13 +183,28 @@ const FinalExamPage: React.FC = () => {
               {currentQuestion < finalExamQuestions.length - 1 ? (
                 <Button onClick={() => setCurrentQuestion(prev => prev + 1)} disabled={selectedAnswers[finalExamQuestions[currentQuestion].id] === undefined} className="gap-2">Siguiente<ArrowRight className="w-4 h-4" /></Button>
               ) : (
-                <Button onClick={handleSubmitExam} disabled={!allQuestionsAnswered} className="lovirtual-gradient-bg text-white gap-2"><CheckCircle className="w-4 h-4" />Finalizar Examen</Button>
+                <Button onClick={handleSubmitExam} disabled={!allQuestionsAnswered || isEvaluating} className="lovirtual-gradient-bg text-white gap-2">
+                  {isEvaluating ? <><Loader2 className="w-4 h-4 animate-spin" />Evaluando...</> : <><CheckCircle className="w-4 h-4" />Finalizar Examen</>}
+                </Button>
               )}
             </div>
             <div className="flex justify-center gap-2 pt-4 flex-wrap">
               {finalExamQuestions.map((_, index) => (
                 <button key={index} onClick={() => setCurrentQuestion(index)}
                   className={`w-3 h-3 rounded-full transition-colors ${index === currentQuestion ? 'lovirtual-gradient-bg' : selectedAnswers[finalExamQuestions[index].id] !== undefined ? 'bg-success' : 'bg-muted'}`} />
+              ))}
+            </div>
+          </div>
+        ) : isEvaluating ? (
+          <div className="text-center animate-fade-in py-16">
+            <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-primary/10 mb-6">
+              <Brain className="w-12 h-12 text-primary animate-pulse" />
+            </div>
+            <h3 className="text-2xl font-bold text-foreground mb-3">Claude está revisando tu examen</h3>
+            <p className="text-muted-foreground mb-6">Analizando tus respuestas y comprensión del material...</p>
+            <div className="flex justify-center gap-1">
+              {[0,1,2].map(i => (
+                <div key={i} className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
               ))}
             </div>
           </div>
@@ -156,13 +215,40 @@ const FinalExamPage: React.FC = () => {
             </div>
             <h3 className="text-3xl font-bold text-foreground mb-2">{passed ? '¡Felicitaciones!' : 'No aprobaste'}</h3>
             <p className="text-xl text-muted-foreground mb-2">Tu puntuación: <span className="font-bold text-foreground">{score}%</span></p>
+
+            {/* Claude AI Evaluation Card */}
+            {claudeEval && (
+              <div className={`my-6 p-5 rounded-xl border-2 text-left max-w-xl mx-auto ${passed ? 'border-success/40 bg-success/5' : 'border-destructive/40 bg-destructive/5'}`}>
+                <div className="flex items-center gap-2 mb-3">
+                  <Brain className="w-5 h-5 text-primary flex-shrink-0" />
+                  <span className="font-semibold text-foreground text-sm">Evaluación de Claude AI</span>
+                  <span className={`ml-auto text-xs font-bold px-2 py-1 rounded-full ${passed ? 'bg-success/20 text-success' : 'bg-destructive/20 text-destructive'}`}>
+                    {claudeEval.verdict}
+                  </span>
+                </div>
+                <p className="text-foreground text-sm leading-relaxed mb-3">{claudeEval.feedback}</p>
+                {claudeEval.details.length > 0 && (
+                  <ul className="space-y-1">
+                    {claudeEval.details.map((d, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
+                        <span className={`mt-0.5 flex-shrink-0 ${passed ? 'text-success' : 'text-warning'}`}>
+                          {passed ? '★' : '→'}
+                        </span>
+                        {d}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+
             <p className="text-muted-foreground mb-8">{passed ? 'Has completado exitosamente el curso. ¡Tu certificado está listo!' : 'Necesitas al menos 70% para aprobar.'}</p>
             {passed ? (
               <Button size="lg" onClick={() => { markCertificateGenerated(); navigate('/final-exam'); }} className="lovirtual-gradient-bg text-white gap-2"><Award className="w-5 h-5" />Ver Mi Certificado</Button>
             ) : (
               <div className="flex justify-center gap-4">
                 <Button variant="outline" onClick={() => navigate('/dashboard')}>Revisar Módulos</Button>
-                <Button onClick={() => { setExamStarted(false); setShowResults(false); setExamSubmitted(false); setSelectedAnswers({}); setCurrentQuestion(0); }}>Intentar de Nuevo</Button>
+                <Button onClick={() => { setExamStarted(false); setShowResults(false); setExamSubmitted(false); setSelectedAnswers({}); setCurrentQuestion(0); setClaudeEval(null); }}>Intentar de Nuevo</Button>
               </div>
             )}
           </div>

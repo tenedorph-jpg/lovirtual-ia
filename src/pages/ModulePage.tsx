@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { courseModules } from '@/data/courseModules';
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
 import {
   ArrowLeft,
   ArrowRight,
@@ -14,7 +15,17 @@ import {
   Wrench,
   HelpCircle,
   Sparkles,
+  Brain,
+  Loader2,
 } from 'lucide-react';
+
+interface ClaudeEvaluation {
+  approved: boolean;
+  score: number;
+  verdict: string;
+  feedback: string;
+  details: string[];
+}
 
 const ModulePage: React.FC = () => {
   const { moduleId } = useParams<{ moduleId: string }>();
@@ -26,6 +37,10 @@ const ModulePage: React.FC = () => {
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({});
   const [showResults, setShowResults] = useState(false);
   const [quizSubmitted, setQuizSubmitted] = useState(false);
+  const [isEvaluating, setIsEvaluating] = useState(false);
+  const [claudeEval, setClaudeEval] = useState<ClaudeEvaluation | null>(null);
+
+  const isModule10 = module.id === 10;
 
   const module = courseModules.find(m => m.id === parseInt(moduleId || '0'));
 
@@ -50,19 +65,58 @@ const ModulePage: React.FC = () => {
     return Math.round((correct / module.quiz.length) * 100);
   };
 
-  const handleSubmitQuiz = () => {
-    const score = calculateScore();
+  const handleSubmitQuiz = async () => {
     setQuizSubmitted(true);
-    setShowResults(true);
-    updateStudentProgress(module.id, score);
-    if (score >= 70) {
-      completeModule(module.id);
+
+    if (isModule10) {
+      // Module 10: use Claude for evaluation
+      setIsEvaluating(true);
+      let evaluation: ClaudeEvaluation | null = null;
+      try {
+        const { data, error } = await supabase.functions.invoke('evaluate-exam', {
+          body: {
+            questions: module.quiz,
+            selectedAnswers,
+            studentName: currentStudent?.name ?? 'Estudiante',
+            examType: 'module10',
+            moduleTitle: module.title,
+          },
+        });
+        if (!error && data) evaluation = data as ClaudeEvaluation;
+      } catch {
+        // fallback below
+      }
+
+      if (!evaluation) {
+        const rawScore = calculateScore();
+        evaluation = {
+          approved: rawScore >= 70,
+          score: rawScore,
+          verdict: rawScore >= 70 ? 'APROBADO' : 'NO APROBADO',
+          feedback: rawScore >= 70
+            ? `¡Excelente trabajo, ${currentStudent?.name}! Dominas el módulo.`
+            : `${currentStudent?.name}, repasa el contenido e inténtalo de nuevo.`,
+          details: [],
+        };
+      }
+
+      setClaudeEval(evaluation);
+      setIsEvaluating(false);
+      setShowResults(true);
+      updateStudentProgress(module.id, evaluation.score);
+      if (evaluation.approved) completeModule(module.id);
+    } else {
+      // Other modules: standard evaluation
+      const score = calculateScore();
+      setShowResults(true);
+      updateStudentProgress(module.id, score);
+      if (score >= 70) completeModule(module.id);
     }
   };
 
   const allQuestionsAnswered = module.quiz.every(q => selectedAnswers[q.id] !== undefined);
-  const score = calculateScore();
-  const passed = score >= 70;
+  const score = claudeEval?.score ?? calculateScore();
+  const passed = claudeEval ? claudeEval.approved : score >= 70;
 
   return (
     <div className="min-h-screen bg-background">
@@ -260,11 +314,14 @@ const ModulePage: React.FC = () => {
                   ) : (
                     <Button
                       onClick={handleSubmitQuiz}
-                      disabled={!allQuestionsAnswered}
+                      disabled={!allQuestionsAnswered || isEvaluating}
                       className="lovirtual-gradient-bg text-white gap-2"
                     >
-                      <CheckCircle className="w-4 h-4" />
-                      Enviar Respuestas
+                      {isEvaluating ? (
+                        <><Loader2 className="w-4 h-4 animate-spin" />Evaluando...</>
+                      ) : (
+                        <><CheckCircle className="w-4 h-4" />Enviar Respuestas</>
+                      )}
                     </Button>
                   )}
                 </div>
@@ -286,6 +343,20 @@ const ModulePage: React.FC = () => {
                   ))}
                 </div>
               </>
+            ) : isEvaluating ? (
+              // Claude evaluating screen (Module 10 only)
+              <div className="text-center animate-fade-in py-12">
+                <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 mb-6">
+                  <Brain className="w-10 h-10 text-primary animate-pulse" />
+                </div>
+                <h3 className="text-xl font-bold text-foreground mb-2">Claude está revisando tu quiz</h3>
+                <p className="text-muted-foreground text-sm mb-4">Analizando tu comprensión del módulo...</p>
+                <div className="flex justify-center gap-1">
+                  {[0,1,2].map(i => (
+                    <div key={i} className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
+                  ))}
+                </div>
+              </div>
             ) : (
               // Results View
               <div className="text-center animate-scale-in">
@@ -305,6 +376,33 @@ const ModulePage: React.FC = () => {
                 <p className="text-muted-foreground mb-4">
                   Tu puntuación: <span className="font-bold text-foreground">{score}%</span>
                 </p>
+
+                {/* Claude AI Evaluation Card — Module 10 only */}
+                {isModule10 && claudeEval && (
+                  <div className={`my-4 p-4 rounded-xl border-2 text-left max-w-lg mx-auto ${passed ? 'border-success/40 bg-success/5' : 'border-destructive/40 bg-destructive/5'}`}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Brain className="w-4 h-4 text-primary flex-shrink-0" />
+                      <span className="font-semibold text-foreground text-sm">Evaluación de Claude AI</span>
+                      <span className={`ml-auto text-xs font-bold px-2 py-0.5 rounded-full ${passed ? 'bg-success/20 text-success' : 'bg-destructive/20 text-destructive'}`}>
+                        {claudeEval.verdict}
+                      </span>
+                    </div>
+                    <p className="text-foreground text-sm leading-relaxed mb-2">{claudeEval.feedback}</p>
+                    {claudeEval.details.length > 0 && (
+                      <ul className="space-y-1">
+                        {claudeEval.details.map((d, i) => (
+                          <li key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
+                            <span className={`mt-0.5 flex-shrink-0 ${passed ? 'text-success' : 'text-warning'}`}>
+                              {passed ? '★' : '→'}
+                            </span>
+                            {d}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
+
                 <p className="text-sm text-muted-foreground mb-8">
                   {passed
                     ? 'Has completado este módulo exitosamente.'
@@ -356,6 +454,7 @@ const ModulePage: React.FC = () => {
                         setQuizSubmitted(false);
                         setSelectedAnswers({});
                         setCurrentQuestion(0);
+                        setClaudeEval(null);
                       }}
                     >
                       Revisar Contenido
