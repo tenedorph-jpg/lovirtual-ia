@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import {
   Clock,
   Lock,
   Award,
+  ChevronDown,
 } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 import CourseAccordion from '@/components/CourseAccordion';
@@ -30,6 +31,9 @@ const StudentDashboard: React.FC = () => {
     logout();
     navigate('/');
   };
+
+  const [level1Open, setLevel1Open] = useState(false);
+  const [level2Open, setLevel2Open] = useState(false);
 
   const completedModules = currentStudent.completedModules.length;
   const totalModules = courseModules.length;
@@ -149,27 +153,59 @@ const StudentDashboard: React.FC = () => {
           />
         </div>
 
-        {/* Modules Accordion */}
-        <h3 className="text-xl font-bold text-foreground mb-4">Contenido del Curso</h3>
-        <div className="mb-8">
-          <CourseAccordion
-            completedModules={currentStudent.completedModules}
-            quizScores={currentStudent.quizScores}
-          />
+        {/* Nivel 1 — collapsible */}
+        <div className="mb-4">
+          <button
+            onClick={() => setLevel1Open(o => !o)}
+            className="w-full flex items-center justify-between bg-card border border-border rounded-xl px-5 py-4 hover:border-primary/50 transition-colors"
+          >
+            <div className="flex items-center gap-4 text-left">
+              <div className="w-10 h-10 rounded-full lovirtual-gradient-bg flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                N1
+              </div>
+              <div>
+                <h3 className="font-bold text-foreground">Nivel 1: Fundamentos de IA</h3>
+                <p className="text-sm text-muted-foreground">{completedModules}/{totalModules} módulos completados</p>
+              </div>
+            </div>
+            <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform duration-200 ${level1Open ? 'rotate-180' : ''}`} />
+          </button>
+          {level1Open && (
+            <div className="mt-3">
+              <CourseAccordion
+                completedModules={currentStudent.completedModules}
+                quizScores={currentStudent.quizScores}
+              />
+            </div>
+          )}
         </div>
 
-        {/* Level 2 CTA */}
-        <div className="lovirtual-card mb-8">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <h3 className="text-xl font-bold text-foreground">Nivel 2: Implementación y Automatización</h3>
-              <p className="text-muted-foreground text-sm">Continúa tu ruta de aprendizaje con módulos avanzados</p>
+        {/* Nivel 2 — collapsible */}
+        <div className="mb-8">
+          <button
+            onClick={() => setLevel2Open(o => !o)}
+            className="w-full flex items-center justify-between bg-card border border-border rounded-xl px-5 py-4 hover:border-primary/50 transition-colors"
+          >
+            <div className="flex items-center gap-4 text-left">
+              <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground font-bold text-sm flex-shrink-0">
+                N2
+              </div>
+              <div>
+                <h3 className="font-bold text-foreground">Nivel 2: Implementación y Automatización</h3>
+                <p className="text-sm text-muted-foreground">Continúa tu ruta de aprendizaje con módulos avanzados</p>
+              </div>
             </div>
-            <Button onClick={() => navigate('/level-2')} className="lovirtual-gradient-bg text-white gap-2">
-              <Sparkles className="w-4 h-4" />
-              Ver Ruta de Aprendizaje
-            </Button>
-          </div>
+            <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform duration-200 ${level2Open ? 'rotate-180' : ''}`} />
+          </button>
+          {level2Open && (
+            <div className="mt-3 lovirtual-card flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <p className="text-muted-foreground text-sm">Accede a los módulos avanzados de Nivel 2 y continúa tu formación en IA.</p>
+              <Button onClick={() => navigate('/level-2')} className="lovirtual-gradient-bg text-white gap-2 flex-shrink-0">
+                <Sparkles className="w-4 h-4" />
+                Ver Ruta de Aprendizaje
+              </Button>
+            </div>
+          )}
         </div>
         {/* Final Exam Section */}
         <div className="lovirtual-card">
