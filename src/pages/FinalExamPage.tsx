@@ -263,7 +263,7 @@ const FinalExamPage: React.FC = () => {
 
 // Helper: draw arc text in jsPDF
 function drawSealArcText(
-  pdf: ReturnType<typeof jsPDF.prototype.constructor> & { setFont: any; setFontSize: any; setTextColor: any; text: any },
+  pdf: InstanceType<typeof jsPDF>,
   text: string, cx: number, cy: number, r: number,
   startDeg: number, endDeg: number, fontSize: number, color: [number,number,number]
 ) {
