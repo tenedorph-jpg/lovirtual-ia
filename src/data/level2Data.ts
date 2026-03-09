@@ -158,6 +158,11 @@ export const level2Modules: Level2Module[] = [
       "La sincronización labial (lip-sync) con IA es una tecnología que ajusta los movimientos de la boca de un avatar o persona real para que coincidan perfectamente con un audio nuevo. Combinado con la clonación de voz, puedes crear un video donde 'tú' hablas en japonés, aunque nunca hayas estudiado ese idioma.",
       "Para la post-producción, CapCut integra funciones de IA como la eliminación automática de silencios, subtítulos generados automáticamente y efectos de transición inteligentes. El flujo completo —desde el guion generado por IA hasta el video final editado— puede completarse en menos de una hora.",
     ],
+    quiz: {
+      question: "¿Qué tecnología permite que un avatar mueva los labios de forma sincronizada con un audio nuevo?",
+      options: ["Rendering 3D manual", "Lip-sync con IA", "Edición fotograma a fotograma", "Captura de movimiento con sensores"],
+      correctAnswer: "Lip-sync con IA",
+    },
   },
   {
     id: 6,
