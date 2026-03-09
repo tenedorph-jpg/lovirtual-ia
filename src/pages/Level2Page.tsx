@@ -2,7 +2,7 @@ import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { LogOut, Sparkles, ArrowLeft } from 'lucide-react';
+import { LogOut, Sparkles, ArrowLeft, Trophy, Lock, Award } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 import LearningPathCards from '@/components/level2/LearningPathCards';
 import StudentProgressPanel from '@/components/level2/StudentProgressPanel';
