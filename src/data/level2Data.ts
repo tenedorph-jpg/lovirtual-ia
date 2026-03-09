@@ -19,6 +19,7 @@ export interface Level2Module {
   duration: string;
   status: 'unlocked' | 'locked';
   lessons: string[];
+  educationalContent?: string[];
   quiz?: Quiz;
   type?: 'evaluation';
   evaluationData?: EvaluationData;
