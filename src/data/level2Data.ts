@@ -179,6 +179,11 @@ export const level2Modules: Level2Module[] = [
       "Para generar hilos de redes sociales o secuencias de correos electrónicos, la clave es proporcionarle a la IA el contexto del público objetivo, el tono deseado y el objetivo de conversión. Un prompt como 'Actúa como un copywriter experto en B2B SaaS. Escribe una secuencia de 5 correos usando el framework AIDA para vender un CRM a directores de ventas' produce resultados significativamente mejores que 'Escribe correos de venta'.",
       "El mayor error al usar IA para redacción es no humanizar el resultado. Los textos generados tienden a usar frases genéricas y estructuras predecibles. Tu trabajo es inyectar anécdotas reales, datos específicos de tu industria y un tono conversacional que rompa el patrón robótico. La IA es tu borrador inicial, no tu versión final.",
     ],
+    quiz: {
+      question: "¿Qué significa la sigla PAS en el contexto de copywriting?",
+      options: ["Producción, Análisis, Seguimiento", "Problema, Agitación, Solución", "Planificación, Acción, Sistema", "Producto, Audiencia, Segmento"],
+      correctAnswer: "Problema, Agitación, Solución",
+    },
   },
   {
     id: 7,
