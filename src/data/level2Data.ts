@@ -137,6 +137,11 @@ export const level2Modules: Level2Module[] = [
       "Por ejemplo, puedes crear un flujo donde cada vez que recibes un correo en Gmail con un archivo adjunto, automáticamente se guarde en Google Drive, se extraiga el texto con IA y se agregue un resumen a una base de datos en Notion. Todo sin intervención humana.",
       "Los asistentes virtuales automatizados son el siguiente nivel: combinando WhatsApp Business, OpenAI y Make, puedes crear un chatbot que responda preguntas frecuentes de clientes, agende citas y escale casos complejos a un humano. La clave está en diseñar el flujo conversacional antes de implementarlo.",
     ],
+    quiz: {
+      question: "¿Qué herramienta actúa como puente entre aplicaciones para crear flujos automáticos sin código?",
+      options: ["Google Docs", "Zapier / Make", "Microsoft Paint", "WordPress"],
+      correctAnswer: "Zapier / Make",
+    },
   },
   {
     id: 5,
