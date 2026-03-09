@@ -207,6 +207,11 @@ export const level2Modules: Level2Module[] = [
       "Introducción a Supabase (Tablas básicas).",
       "Cómo la IA genera interfaces a partir de datos.",
     ],
+    educationalContent: [
+      "Toda aplicación moderna tiene dos partes: el Frontend (lo que el usuario ve y toca) y el Backend (donde se almacenan los datos y se ejecuta la lógica del negocio). Lovable te permite construir el frontend completo con IA, pero para que tu aplicación sea realmente funcional, necesitas conectarla a datos reales.",
+      "Supabase es una plataforma de backend que te permite crear tablas de datos, gestionar usuarios y establecer reglas de seguridad sin necesidad de configurar servidores. Piensa en ello como una hoja de cálculo superpotente que vive en la nube y a la que tu aplicación puede acceder en tiempo real.",
+      "Lo fascinante de combinar Lovable con datos reales es que la IA puede generar interfaces completas —tablas, formularios, dashboards— directamente a partir de la estructura de tus datos. Describes lo que necesitas, y la IA crea componentes React funcionales que leen y escriben en tu base de datos automáticamente.",
+    ],
   },
   {
     id: 10,
