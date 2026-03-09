@@ -14,7 +14,7 @@ import AIEvaluationSimulator from './AIEvaluationSimulator';
 interface Props {
   modules: Level2Module[];
   completedModules: number[];
-  onModuleComplete?: (moduleId: number) => void;
+  onModuleComplete?: (moduleId: number, score?: number) => void;
 }
 
 const Level2Accordion: React.FC<Props> = ({ modules, completedModules, onModuleComplete }) => {
@@ -27,9 +27,9 @@ const Level2Accordion: React.FC<Props> = ({ modules, completedModules, onModuleC
     return 'locked';
   };
 
-  const handleQuizComplete = () => {
+  const handleQuizComplete = (score: number) => {
     if (activeQuizModule && onModuleComplete) {
-      onModuleComplete(activeQuizModule.id);
+      onModuleComplete(activeQuizModule.id, score);
     }
   };
 

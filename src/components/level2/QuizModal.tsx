@@ -14,7 +14,7 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   moduleTitle: string;
   quiz: Quiz;
-  onCorrectAnswer?: () => void;
+  onCorrectAnswer?: (score: number) => void;
 }
 
 const QuizModal: React.FC<Props> = ({ open, onOpenChange, moduleTitle, quiz, onCorrectAnswer }) => {
@@ -32,7 +32,7 @@ const QuizModal: React.FC<Props> = ({ open, onOpenChange, moduleTitle, quiz, onC
     if (!selected) return;
     setSubmitted(true);
     if (selected === quiz.correctAnswer && onCorrectAnswer) {
-      onCorrectAnswer();
+      onCorrectAnswer(100);
     }
   };
 
