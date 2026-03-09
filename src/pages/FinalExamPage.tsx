@@ -258,7 +258,33 @@ const FinalExamPage: React.FC = () => {
   );
 };
 
-// ========== REDESIGNED CERTIFICATE ==========
+// ========== CERTIFICATE v2 — Firma + Sello Oficial ==========
+
+// Helper: draw arc text in jsPDF
+function drawSealArcText(
+  pdf: ReturnType<typeof jsPDF.prototype.constructor> & { setFont: any; setFontSize: any; setTextColor: any; text: any },
+  text: string, cx: number, cy: number, r: number,
+  startDeg: number, endDeg: number, fontSize: number, color: [number,number,number]
+) {
+  const chars = text.split('');
+  const N = chars.length;
+  (pdf as any).setFontSize(fontSize);
+  (pdf as any).setTextColor(...color);
+  chars.forEach((ch, i) => {
+    const t = N > 1 ? i / (N - 1) : 0.5;
+    const angleDeg = startDeg + t * (endDeg - startDeg);
+    const angleRad = angleDeg * Math.PI / 180;
+    const x = cx + r * Math.cos(angleRad);
+    const y = cy + r * Math.sin(angleRad);
+    (pdf as any).text(ch, x, y, { angle: angleDeg + 90, align: 'center', baseline: 'middle' });
+  });
+}
+
+function drawCornerDiamond(pdf: any, x: number, y: number, size: number) {
+  pdf.setFillColor(184, 152, 61);
+  pdf.lines([[size, -size],[size, size],[-size, size],[-size, -size]], x, y, [1,1], 'F', true);
+}
+
 const CertificateView: React.FC<{
   studentName: string;
   score: number;
@@ -273,139 +299,206 @@ const CertificateView: React.FC<{
     const w = pdf.internal.pageSize.getWidth();
     const h = pdf.internal.pageSize.getHeight();
 
-    // White background
+    // ── Background ───────────────────────────────────────────────────────────
     pdf.setFillColor(255, 255, 255);
     pdf.rect(0, 0, w, h, 'F');
 
-    // Outer border
+    // Diagonal watermark
+    pdf.setFontSize(36);
+    (pdf as any).setFont('helvetica', 'bold');
+    pdf.setTextColor(242, 242, 246);
+    for (let xi = 0; xi < w; xi += 82) {
+      for (let yi = 0; yi < h + 30; yi += 52) {
+        pdf.text('LOVIRTUAL', xi, yi, { angle: 35 });
+      }
+    }
+
+    // ── Border system ────────────────────────────────────────────────────────
     pdf.setDrawColor(1, 80, 125);
-    pdf.setLineWidth(2);
-    pdf.rect(8, 8, w - 16, h - 16, 'S');
+    (pdf as any).setLineWidth(2.5);
+    pdf.rect(6, 6, w - 12, h - 12, 'S');
 
-    // Inner border
-    pdf.setDrawColor(1, 152, 207);
-    pdf.setLineWidth(0.8);
-    pdf.rect(12, 12, w - 24, h - 24, 'S');
+    pdf.setDrawColor(184, 152, 61);
+    (pdf as any).setLineWidth(0.7);
+    pdf.rect(10, 10, w - 20, h - 20, 'S');
 
-    // "ACADEMIA LOVIRTUAL" top
-    pdf.setTextColor(1, 152, 207);
-    pdf.setFontSize(14);
-    pdf.setFont('helvetica', 'normal');
-    pdf.text('ACADEMIA LOVIRTUAL', w / 2, 30, { align: 'center' });
+    pdf.setDrawColor(1, 80, 125);
+    (pdf as any).setLineWidth(0.3);
+    pdf.rect(13, 13, w - 26, h - 26, 'S');
 
-    // "CERTIFICADO"
+    // Corner diamonds
+    [[8,8],[w-8,8],[8,h-8],[w-8,h-8]].forEach(([cx,cy]) => drawCornerDiamond(pdf, cx, cy, 1.8));
+    drawCornerDiamond(pdf, w/2, 8, 1.2);
+    drawCornerDiamond(pdf, 8, h/2, 1.2);
+    drawCornerDiamond(pdf, w-8, h/2, 1.2);
+    drawCornerDiamond(pdf, w/2, h-8, 1.2);
+
+    // ── Header ───────────────────────────────────────────────────────────────
+    pdf.setDrawColor(184, 152, 61);
+    (pdf as any).setLineWidth(0.5);
+    pdf.line(20, 28, 105, 28);
+    pdf.line(192, 28, 277, 28);
+
+    (pdf as any).setFont('helvetica', 'bold');
+    pdf.setFontSize(10);
+    pdf.setTextColor(201, 162, 39);
+    pdf.text('A C A D E M I A   L O V I R T U A L', w / 2, 27.5, { align: 'center', baseline: 'bottom' });
+
+    // ── Main title ───────────────────────────────────────────────────────────
+    (pdf as any).setFont('times', 'bold');
+    pdf.setFontSize(46);
     pdf.setTextColor(1, 80, 125);
-    pdf.setFontSize(42);
-    pdf.setFont('times', 'bold');
-    pdf.text('CERTIFICADO', w / 2, 52, { align: 'center' });
+    pdf.text('CERTIFICADO', w / 2, 48, { align: 'center' });
 
-    // "DE FINALIZACIÓN"
-    pdf.setFontSize(16);
-    pdf.setFont('helvetica', 'normal');
+    (pdf as any).setFont('helvetica', 'normal');
+    pdf.setFontSize(13);
     pdf.setTextColor(100, 100, 100);
-    const subTitle = 'D E   F I N A L I Z A C I Ó N';
-    pdf.text(subTitle, w / 2, 62, { align: 'center' });
+    pdf.text('D E   F I N A L I Z A C I Ó N', w / 2, 57, { align: 'center' });
 
-    // "SE CERTIFICA QUE"
-    pdf.setFontSize(11);
-    pdf.setTextColor(120, 120, 120);
-    pdf.text('SE CERTIFICA QUE', w / 2, 78, { align: 'center' });
+    // Gold divider with diamond
+    pdf.setDrawColor(184, 152, 61);
+    (pdf as any).setLineWidth(0.6);
+    pdf.line(30, 63, w/2 - 5, 63);
+    pdf.line(w/2 + 5, 63, w - 30, 63);
+    drawCornerDiamond(pdf, w/2, 63, 1.6);
 
-    // Student Name (italic blue)
-    pdf.setFontSize(30);
-    pdf.setFont('times', 'bolditalic');
+    // ── Student info ─────────────────────────────────────────────────────────
+    (pdf as any).setFont('times', 'italic');
+    pdf.setFontSize(10);
+    pdf.setTextColor(140, 140, 140);
+    pdf.text('Se certifica que', w / 2, 72, { align: 'center' });
+
+    (pdf as any).setFont('times', 'bolditalic');
+    pdf.setFontSize(32);
     pdf.setTextColor(1, 110, 157);
-    pdf.text(studentName, w / 2, 95, { align: 'center' });
+    pdf.text(studentName, w / 2, 85, { align: 'center' });
 
-    // Decorative line under name
-    const nameWidth = pdf.getTextWidth(studentName);
-    const lineStartX = (w - nameWidth) / 2 - 10;
-    const lineEndX = (w + nameWidth) / 2 + 10;
-    pdf.setDrawColor(1, 152, 207);
-    pdf.setLineWidth(0.5);
-    pdf.line(lineStartX, 99, lineEndX, 99);
+    // Double gold underline
+    const nw = (pdf as any).getTextWidth(studentName);
+    const nx1 = w/2 - nw/2 - 8, nx2 = w/2 + nw/2 + 8;
+    pdf.setDrawColor(184, 152, 61);
+    (pdf as any).setLineWidth(0.8);
+    pdf.line(nx1, 89, nx2, 89);
+    (pdf as any).setLineWidth(0.3);
+    pdf.line(nx1 + 5, 91, nx2 - 5, 91);
 
-    // Description text
-    pdf.setFontSize(11);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(80, 80, 80);
-    const desc = 'Ha completado satisfactoriamente todos los módulos, actividades prácticas';
-    const desc2 = 'y evaluaciones del programa de formación:';
-    pdf.text(desc, w / 2, 112, { align: 'center' });
-    pdf.text(desc2, w / 2, 118, { align: 'center' });
+    // ── Description ──────────────────────────────────────────────────────────
+    (pdf as any).setFont('helvetica', 'normal');
+    pdf.setFontSize(10);
+    pdf.setTextColor(100, 100, 100);
+    pdf.text(
+      'Ha completado satisfactoriamente todos los módulos, actividades prácticas y evaluaciones del programa de formación:',
+      w / 2, 100, { align: 'center', maxWidth: 220 }
+    );
 
-    // Course name in pill
-    pdf.setFillColor(240, 245, 250);
-    const pillW = 200;
-    const pillH = 12;
-    const pillX = (w - pillW) / 2;
-    const pillY = 124;
-    pdf.roundedRect(pillX, pillY, pillW, pillH, 4, 4, 'F');
-    pdf.setFontSize(11);
-    pdf.setFont('helvetica', 'bold');
+    // Course pill
+    pdf.setFillColor(235, 243, 250);
+    pdf.setDrawColor(1, 80, 125);
+    (pdf as any).setLineWidth(0.3);
+    (pdf as any).roundedRect((w - 210) / 2, 108, 210, 11, 3, 3, 'FD');
+    (pdf as any).setFont('helvetica', 'bold');
+    pdf.setFontSize(10);
     pdf.setTextColor(1, 80, 125);
-    pdf.text(courseName, w / 2, pillY + 8, { align: 'center' });
+    pdf.text(courseName, w / 2, 115.5, { align: 'center' });
 
     // Score
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(100, 100, 100);
-    pdf.text(`Calificación obtenida: ${score}%`, w / 2, 148, { align: 'center' });
-
-    // Footer section: 3 columns
-    const footerY = 165;
-
-    // Left: Date
-    pdf.setDrawColor(1, 80, 125);
-    pdf.setLineWidth(0.5);
-    pdf.line(30, footerY, 90, footerY);
+    (pdf as any).setFont('helvetica', 'normal');
     pdf.setFontSize(9);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(100, 100, 100);
-    pdf.text('FECHA DE EMISIÓN', 60, footerY + 5, { align: 'center' });
-    pdf.setFontSize(10);
-    pdf.setTextColor(50, 50, 50);
-    pdf.text(currentDate, 60, footerY + 11, { align: 'center' });
+    pdf.setTextColor(130, 130, 130);
+    pdf.text('Calificación obtenida: ', w/2 - 8, 127, { align: 'right' });
+    (pdf as any).setFont('helvetica', 'bold');
+    pdf.setTextColor(201, 162, 39);
+    pdf.text(`${score}%`, w/2 - 7, 127, { align: 'left' });
 
-    // Center: Seal
+    pdf.setDrawColor(200, 200, 200);
+    (pdf as any).setLineWidth(0.3);
+    pdf.line(20, 132, w - 20, 132);
+
+    // ── Footer ───────────────────────────────────────────────────────────────
+    const fY = 162;
+
+    // — Date —
     pdf.setDrawColor(1, 80, 125);
-    pdf.setLineWidth(1.5);
-    pdf.circle(w / 2, footerY + 2, 14, 'S');
-    pdf.setDrawColor(1, 152, 207);
-    pdf.setLineWidth(0.5);
-    pdf.circle(w / 2, footerY + 2, 11, 'S');
-    pdf.setFontSize(6);
-    pdf.setFont('helvetica', 'bold');
+    (pdf as any).setLineWidth(0.5);
+    pdf.line(22, fY, 98, fY);
+    (pdf as any).setFont('helvetica', 'bold');
+    pdf.setFontSize(7);
+    pdf.setTextColor(130, 130, 130);
+    pdf.text('FECHA DE EMISIÓN', 60, fY + 5, { align: 'center' });
+    (pdf as any).setFont('helvetica', 'normal');
+    pdf.setFontSize(9);
+    pdf.setTextColor(60, 60, 60);
+    pdf.text(currentDate, 60, fY + 11, { align: 'center' });
+
+    // — Official Seal —
+    const sX = w / 2, sY = fY - 12;
+    pdf.setDrawColor(1, 80, 125);
+    (pdf as any).setLineWidth(1.3);
+    (pdf as any).circle(sX, sY, 24, 'S');
+    for (let a = 0; a < 360; a += 22.5) {
+      const r = a * Math.PI / 180;
+      (pdf as any).setLineWidth(0.5);
+      pdf.line(sX + 21.5*Math.cos(r), sY + 21.5*Math.sin(r), sX + 24*Math.cos(r), sY + 24*Math.sin(r));
+    }
+    pdf.setDrawColor(1, 80, 125);
+    (pdf as any).setLineWidth(0.4);
+    (pdf as any).circle(sX, sY, 19, 'S');
+    pdf.setDrawColor(184, 152, 61);
+    (pdf as any).setLineWidth(0.7);
+    (pdf as any).circle(sX, sY, 18, 'S');
+
+    (pdf as any).setFont('helvetica', 'bold');
+    drawSealArcText(pdf as any, '\u00b7 ACADEMIA LOVIRTUAL \u00b7', sX, sY, 15.5, -152, -28, 5.2, [1,80,125]);
+    (pdf as any).setFont('helvetica', 'normal');
+    drawSealArcText(pdf as any, '\u00b7 CERTIFICADO OFICIAL \u00b7', sX, sY, 15.5, 28, 152, 4.5, [1,80,125]);
+
+    [[0,-18],[18,0],[0,18],[-18,0]].forEach(([dx,dy]) => {
+      pdf.setFillColor(184, 152, 61);
+      (pdf as any).circle(sX+dx, sY+dy, 1.1, 'F');
+    });
+
+    pdf.setDrawColor(184, 152, 61);
+    (pdf as any).setLineWidth(0.5);
+    pdf.line(sX-8, sY-5, sX+8, sY-5);
+    pdf.line(sX-8, sY+4.5, sX+8, sY+4.5);
+
+    (pdf as any).setFont('times', 'bold');
+    pdf.setFontSize(13);
     pdf.setTextColor(1, 80, 125);
-    pdf.text('SELLO', w / 2, footerY - 1, { align: 'center' });
-    pdf.text('LoVirtual', w / 2, footerY + 3, { align: 'center' });
-    pdf.text('LLC', w / 2, footerY + 7, { align: 'center' });
+    pdf.text('LV', sX, sY + 2.5, { align: 'center' });
 
-    // Right: Signature
+    (pdf as any).setFont('helvetica', 'bold');
+    pdf.setFontSize(4);
+    pdf.setTextColor(201, 162, 39);
+    pdf.text('L L C', sX, sY + 8, { align: 'center' });
+
+    // — Cursive Signature —
+    const sigX = w - 60;
+    const sigOriginX = sigX - 28, sigOriginY = fY - 18;
+    pdf.setDrawColor(20, 20, 60);
+    (pdf as any).setLineWidth(0.55);
+    (pdf as any).lines([
+      [5,-8],[6,-4],[4,6],[5,-10],[6,-5],[4,8],[5,-3],[8,-6],[5,5],[5,-8],[4,-2],[6,7],[3,2],
+    ], sigOriginX, sigOriginY, [1,1], 'S', false);
+    (pdf as any).setLineWidth(0.35);
+    (pdf as any).lines([[8,1],[12,0],[8,1],[5,-1],[4,0]], sigOriginX+2, sigOriginY+8, [1,1], 'S', false);
+
     pdf.setDrawColor(1, 80, 125);
-    pdf.setLineWidth(0.5);
-    pdf.line(w - 90, footerY, w - 30, footerY);
-    // Simulate signature with a curve
-    pdf.setDrawColor(30, 30, 80);
-    pdf.setLineWidth(0.8);
-    const sigCx = w - 60;
-    // Simple signature simulation
-    pdf.line(sigCx - 15, footerY - 8, sigCx - 5, footerY - 14);
-    pdf.line(sigCx - 5, footerY - 14, sigCx + 5, footerY - 6);
-    pdf.line(sigCx + 5, footerY - 6, sigCx + 15, footerY - 12);
-    pdf.line(sigCx + 15, footerY - 12, sigCx + 20, footerY - 5);
-
+    (pdf as any).setLineWidth(0.5);
+    pdf.line(w - 98, fY, w - 22, fY);
+    (pdf as any).setFont('helvetica', 'bold');
+    pdf.setFontSize(7);
+    pdf.setTextColor(130, 130, 130);
+    pdf.text('DIRECCIÓN ACADÉMICA', sigX, fY + 5, { align: 'center' });
+    (pdf as any).setFont('helvetica', 'normal');
     pdf.setFontSize(9);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(100, 100, 100);
-    pdf.text('DIRECCIÓN ACADÉMICA', sigCx, footerY + 5, { align: 'center' });
-    pdf.setFontSize(8);
-    pdf.text('Academia LoVirtual', sigCx, footerY + 10, { align: 'center' });
+    pdf.setTextColor(60, 60, 60);
+    pdf.text('Academia LoVirtual', sigX, fY + 11, { align: 'center' });
 
-    // Bottom right: Cert ID
-    pdf.setFontSize(6);
+    // Cert ID
+    pdf.setFontSize(5.5);
     pdf.setTextColor(180, 180, 180);
-    pdf.text(`ID: ${certId}`, w - 15, h - 15, { align: 'right' });
+    pdf.text(`ID: ${certId}  |  Autenticado por Academia LoVirtual LLC`, w - 16, h - 9, { align: 'right' });
 
     pdf.save(`Certificado_${studentName.replace(/\s+/g, '_')}_LoVirtual.pdf`);
   };
@@ -425,92 +518,163 @@ const CertificateView: React.FC<{
           <ThemeToggle />
         </div>
 
-        {/* Certificate Preview — white card that contrasts in dark mode */}
-        <div className="bg-card rounded-xl border border-border shadow-lg mb-6 overflow-hidden">
-          {/* Certificate inner with forced white background */}
-          <div className="bg-white p-3 sm:p-6">
-            <div className="border-2 border-[#01507d] p-2">
-              <div className="border border-[#0198CF] p-6 sm:p-10 text-center">
-                {/* Top title */}
-                <p className="text-sm sm:text-base tracking-[0.3em] text-[#0198CF] mb-4 font-medium">
-                  ACADEMIA LOVIRTUAL
-                </p>
+        {/* Certificate Preview */}
+        <div className="bg-card rounded-xl border border-border shadow-xl mb-6 overflow-hidden">
+          <div className="bg-white p-3 sm:p-5" style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}>
+            {/* Triple border */}
+            <div className="border-[3px] border-[#01507d] p-[3px]">
+              <div className="border border-[#b8983d] p-[2px]">
+                <div className="border border-[#01507d]/20 p-5 sm:p-8">
 
-                {/* CERTIFICADO */}
-                <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-[#01507d] mb-1" style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}>
-                  CERTIFICADO
-                </h1>
+                  {/* Header: flanking lines + ACADEMIA LOVIRTUAL */}
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="flex-1 border-t border-[#b8983d]" />
+                    <p className="text-[#c9a227] tracking-[0.35em] text-xs font-sans font-bold whitespace-nowrap">
+                      A C A D E M I A &nbsp; L O V I R T U A L
+                    </p>
+                    <div className="flex-1 border-t border-[#b8983d]" />
+                  </div>
 
-                {/* DE FINALIZACIÓN */}
-                <p className="text-sm sm:text-base tracking-[0.4em] text-gray-500 mb-8">
-                  DE FINALIZACIÓN
-                </p>
+                  {/* CERTIFICADO */}
+                  <h1 className="text-center text-4xl sm:text-5xl md:text-[3.5rem] font-bold text-[#01507d] mb-1 leading-none tracking-wide">
+                    CERTIFICADO
+                  </h1>
+                  <p className="text-center text-xs sm:text-sm tracking-[0.5em] text-gray-500 mb-3 font-sans">
+                    DE FINALIZACIÓN
+                  </p>
 
-                {/* SE CERTIFICA QUE */}
-                <p className="text-xs sm:text-sm text-gray-400 mb-4 uppercase tracking-wider">
-                  Se certifica que
-                </p>
+                  {/* Gold divider */}
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="flex-1 border-t border-[#b8983d]" />
+                    <div className="w-2 h-2 bg-[#b8983d] rotate-45 flex-shrink-0" />
+                    <div className="flex-1 border-t border-[#b8983d]" />
+                  </div>
 
-                {/* Student Name */}
-                <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold italic text-[#026E9D] mb-2" style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}>
-                  {studentName}
-                </h2>
-                <div className="w-64 mx-auto border-b border-[#0198CF] mb-6" />
+                  {/* Se certifica que */}
+                  <p className="text-center text-[10px] sm:text-xs text-gray-400 italic mb-3 font-sans tracking-widest uppercase">
+                    Se certifica que
+                  </p>
 
-                {/* Description */}
-                <p className="text-sm text-gray-500 max-w-lg mx-auto mb-6 leading-relaxed">
-                  Ha completado satisfactoriamente todos los módulos, actividades prácticas
-                  y evaluaciones del programa de formación:
-                </p>
+                  {/* Student Name */}
+                  <h2 className="text-center text-3xl sm:text-4xl md:text-5xl font-bold italic text-[#026E9D] mb-1 leading-tight">
+                    {studentName}
+                  </h2>
+                  {/* Double underline */}
+                  <div className="flex flex-col items-center gap-[3px] mb-4">
+                    <div className="border-t-2 border-[#b8983d]" style={{ width: 'min(18rem, 80%)' }} />
+                    <div className="border-t border-[#b8983d]/50" style={{ width: 'min(14rem, 65%)' }} />
+                  </div>
 
-                {/* Course Name Pill */}
-                <div className="inline-block bg-[#f0f5fa] rounded-full px-6 py-3 mb-6">
-                  <p className="text-sm sm:text-base font-semibold text-[#01507d]">{courseName}</p>
-                </div>
+                  {/* Description */}
+                  <p className="text-center text-xs sm:text-sm text-gray-500 max-w-lg mx-auto mb-3 font-sans leading-relaxed">
+                    Ha completado satisfactoriamente todos los módulos, actividades prácticas
+                    y evaluaciones del programa de formación:
+                  </p>
 
-                <p className="text-sm text-gray-400 mb-10">Calificación obtenida: {score}%</p>
-
-                {/* Footer: 3 columns */}
-                <div className="grid grid-cols-3 items-end gap-4 mt-4">
-                  {/* Left: Date */}
-                  <div className="text-center">
-                    <div className="border-t border-[#01507d] pt-2 mx-4">
-                      <p className="text-[10px] sm:text-xs text-gray-400 uppercase tracking-wider">Fecha de Emisión</p>
-                      <p className="text-xs sm:text-sm text-gray-600 font-medium mt-1">{currentDate}</p>
+                  {/* Course pill */}
+                  <div className="flex justify-center mb-2">
+                    <div className="border border-[#01507d]/30 bg-[#edf3fa] rounded px-4 py-2">
+                      <p className="text-[#01507d] font-bold text-xs sm:text-sm font-sans text-center">{courseName}</p>
                     </div>
                   </div>
 
-                  {/* Center: Seal */}
-                  <div className="flex justify-center">
-                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-[3px] border-[#01507d] flex items-center justify-center">
-                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border border-[#0198CF] flex flex-col items-center justify-center">
-                        <p className="text-[8px] sm:text-[10px] font-bold text-[#01507d] tracking-wider">SELLO</p>
-                        <p className="text-[10px] sm:text-xs font-bold text-[#01507d]">LoVirtual</p>
-                        <p className="text-[8px] sm:text-[10px] text-[#01507d]">LLC</p>
+                  {/* Score */}
+                  <p className="text-center text-xs text-gray-400 mb-4 font-sans">
+                    Calificación obtenida:{' '}
+                    <span className="font-bold text-[#c9a227]">{score}%</span>
+                  </p>
+
+                  {/* Light divider */}
+                  <div className="flex items-center gap-2 mb-5">
+                    <div className="flex-1 border-t border-gray-200" />
+                    <div className="w-1.5 h-1.5 bg-gray-200 rotate-45 flex-shrink-0" />
+                    <div className="flex-1 border-t border-gray-200" />
+                  </div>
+
+                  {/* Footer: 3 columns */}
+                  <div className="grid grid-cols-3 items-end gap-2 sm:gap-4">
+
+                    {/* Left: Date */}
+                    <div className="text-center">
+                      <div className="border-t border-[#01507d] pt-2 mx-1 sm:mx-3">
+                        <p className="text-[8px] sm:text-[10px] font-sans text-gray-400 uppercase tracking-wider">Fecha de Emisión</p>
+                        <p className="text-[10px] sm:text-xs font-sans text-gray-600 font-medium mt-1">{currentDate}</p>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Right: Signature */}
-                  <div className="text-center">
-                    {/* Large signature area */}
-                    <div className="h-16 sm:h-20 flex items-end justify-center mb-1">
-                      <svg viewBox="0 0 200 60" className="w-40 sm:w-52 h-14 sm:h-18">
-                        <path d="M20,45 C30,20 50,15 70,30 C90,45 100,15 120,20 C140,25 150,40 170,15 C175,10 180,25 185,20"
-                          fill="none" stroke="#1e1e50" strokeWidth="2" strokeLinecap="round" />
-                        <path d="M60,42 L140,42" fill="none" stroke="#1e1e50" strokeWidth="0.5" />
+                    {/* Center: Official Seal SVG */}
+                    <div className="flex justify-center">
+                      <svg viewBox="-30 -30 60 60" className="w-24 h-24 sm:w-28 sm:h-28">
+                        {/* Outer ring */}
+                        <circle cx="0" cy="0" r="27" fill="none" stroke="#01507d" strokeWidth="1.5" />
+                        {/* Tick marks */}
+                        {Array.from({ length: 16 }).map((_, i) => {
+                          const a = (i * 22.5 * Math.PI) / 180;
+                          return (
+                            <line key={i}
+                              x1={21.5 * Math.cos(a)} y1={21.5 * Math.sin(a)}
+                              x2={27 * Math.cos(a)}   y2={27 * Math.sin(a)}
+                              stroke="#01507d" strokeWidth="0.5" />
+                          );
+                        })}
+                        {/* Inner rings */}
+                        <circle cx="0" cy="0" r="19" fill="none" stroke="#01507d" strokeWidth="0.5" />
+                        <circle cx="0" cy="0" r="18" fill="none" stroke="#b8983d" strokeWidth="0.8" />
+                        {/* Top arc text */}
+                        <defs>
+                          <path id="topArc" d="M -16 -9 A 18.5 18.5 0 0 1 16 -9" />
+                          <path id="botArc" d="M -14 10 A 18.5 18.5 0 0 0 14 10" />
+                        </defs>
+                        <text fontSize="3.3" fontFamily="sans-serif" fontWeight="bold" fill="#01507d" letterSpacing="0.8">
+                          <textPath href="#topArc" startOffset="50%" textAnchor="middle">· ACADEMIA LOVIRTUAL ·</textPath>
+                        </text>
+                        <text fontSize="3" fontFamily="sans-serif" fill="#01507d" letterSpacing="0.5">
+                          <textPath href="#botArc" startOffset="50%" textAnchor="middle">· CERTIFICADO OFICIAL ·</textPath>
+                        </text>
+                        {/* Cardinal gold dots */}
+                        {[[0,-18],[18,0],[0,18],[-18,0]].map(([dx,dy],i) => (
+                          <circle key={i} cx={dx} cy={dy} r="1.2" fill="#b8983d" />
+                        ))}
+                        {/* Flanking lines */}
+                        <line x1="-8" y1="-5" x2="8" y2="-5" stroke="#b8983d" strokeWidth="0.5" />
+                        <line x1="-8" y1="4.5" x2="8" y2="4.5" stroke="#b8983d" strokeWidth="0.5" />
+                        {/* LV Monogram */}
+                        <text x="0" y="3" textAnchor="middle" fontSize="10" fontFamily="serif" fontWeight="bold" fill="#01507d">LV</text>
+                        {/* LLC */}
+                        <text x="0" y="8.5" textAnchor="middle" fontSize="3" fontFamily="sans-serif" fontWeight="bold" fill="#c9a227" letterSpacing="1">LLC</text>
                       </svg>
                     </div>
-                    <div className="border-t border-[#01507d] pt-2 mx-4">
-                      <p className="text-[10px] sm:text-xs text-gray-400 uppercase tracking-wider">Dirección Académica</p>
-                      <p className="text-xs sm:text-sm text-gray-600 font-medium mt-1">Academia LoVirtual</p>
+
+                    {/* Right: Signature */}
+                    <div className="text-center">
+                      <div className="flex items-end justify-center mb-1" style={{ height: '4rem' }}>
+                        <svg viewBox="0 0 160 55" className="w-32 sm:w-40 h-12 sm:h-14">
+                          {/* Cursive signature path */}
+                          <path
+                            d="M8,42 C14,22 24,14 36,26 C44,34 46,16 58,18 C68,20 72,30 84,22 C94,15 100,24 114,18 C120,15 126,26 134,22 C139,19 144,30 150,26"
+                            fill="none" stroke="#14143c" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"
+                          />
+                          {/* Underline flourish */}
+                          <path
+                            d="M28,38 C50,35 85,36 118,37"
+                            fill="none" stroke="#14143c" strokeWidth="0.7" strokeLinecap="round"
+                          />
+                        </svg>
+                      </div>
+                      <div className="border-t border-[#01507d] pt-2 mx-1 sm:mx-3">
+                        <p className="text-[8px] sm:text-[10px] font-sans text-gray-400 uppercase tracking-wider">Dirección Académica</p>
+                        <p className="text-[10px] sm:text-xs font-sans text-gray-600 font-medium mt-1">Academia LoVirtual</p>
+                      </div>
                     </div>
+
                   </div>
                 </div>
               </div>
             </div>
-            {/* Cert ID - bottom right */}
-            <p className="text-right text-[9px] text-gray-300 mt-2 mr-2">ID: {certId}</p>
+            {/* Cert ID */}
+            <p className="text-right text-[8px] font-sans text-gray-300 mt-1 mr-1">
+              ID: {certId} &nbsp;|&nbsp; Autenticado por Academia LoVirtual LLC
+            </p>
           </div>
         </div>
 
