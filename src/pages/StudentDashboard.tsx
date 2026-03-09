@@ -22,6 +22,9 @@ const StudentDashboard: React.FC = () => {
   const { currentStudent, logout } = useAuth();
   const navigate = useNavigate();
 
+  const [level1Open, setLevel1Open] = useState(false);
+  const [level2Open, setLevel2Open] = useState(false);
+
   if (!currentStudent) {
     navigate('/');
     return null;
@@ -31,9 +34,6 @@ const StudentDashboard: React.FC = () => {
     logout();
     navigate('/');
   };
-
-  const [level1Open, setLevel1Open] = useState(false);
-  const [level2Open, setLevel2Open] = useState(false);
 
   const completedModules = currentStudent.completedModules.length;
   const totalModules = courseModules.length;
