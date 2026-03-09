@@ -12,6 +12,8 @@ import {
   Clock,
   ChevronDown,
   Trophy,
+  Lock,
+  Award,
 } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 import CourseAccordion from '@/components/CourseAccordion';
@@ -169,11 +171,52 @@ const StudentDashboard: React.FC = () => {
             <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform duration-200 ${level1Open ? 'rotate-180' : ''}`} />
           </button>
           {level1Open && (
-            <div className="mt-3">
+            <div className="mt-3 space-y-4">
               <CourseAccordion
                 completedModules={currentStudent.completedModules}
                 quizScores={currentStudent.quizScores}
               />
+              {/* Final Exam & Certificate CTA for Level 1 */}
+              <div className="lovirtual-card">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="p-4 rounded-xl bg-warning/10">
+                      <Trophy className="w-8 h-8 text-warning" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-foreground">Examen Final y Certificación — Nivel 1</h3>
+                      <p className="text-muted-foreground">
+                        Completa los {totalModules} módulos para desbloquear el examen final
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    size="lg"
+                    disabled={!allModulesCompleted}
+                    onClick={() => navigate('/final-exam')}
+                    className={allModulesCompleted ? 'lovirtual-gradient-bg text-white animate-pulse-glow' : ''}
+                  >
+                    {allModulesCompleted ? (
+                      currentStudent.certificateGenerated ? (
+                        <>
+                          <Award className="w-5 h-5 mr-2" />
+                          Ver Certificado
+                        </>
+                      ) : (
+                        <>
+                          <Trophy className="w-5 h-5 mr-2" />
+                          Tomar Examen Final
+                        </>
+                      )
+                    ) : (
+                      <>
+                        <Lock className="w-5 h-5 mr-2" />
+                        {completedModules}/{totalModules} Módulos
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
         </div>
