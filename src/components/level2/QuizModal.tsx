@@ -14,9 +14,10 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   moduleTitle: string;
   quiz: Quiz;
+  onCorrectAnswer?: () => void;
 }
 
-const QuizModal: React.FC<Props> = ({ open, onOpenChange, moduleTitle, quiz }) => {
+const QuizModal: React.FC<Props> = ({ open, onOpenChange, moduleTitle, quiz, onCorrectAnswer }) => {
   const [selected, setSelected] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
 
@@ -30,6 +31,9 @@ const QuizModal: React.FC<Props> = ({ open, onOpenChange, moduleTitle, quiz }) =
   const handleSubmit = () => {
     if (!selected) return;
     setSubmitted(true);
+    if (selected === quiz.correctAnswer && onCorrectAnswer) {
+      onCorrectAnswer();
+    }
   };
 
   const handleClose = () => {
@@ -84,7 +88,7 @@ const QuizModal: React.FC<Props> = ({ open, onOpenChange, moduleTitle, quiz }) =
           >
             {isCorrect ? (
               <>
-                <CheckCircle className="w-5 h-5" /> ¡Correcto! Excelente trabajo.
+                <CheckCircle className="w-5 h-5" /> ¡Correcto! Excelente trabajo. El siguiente módulo ha sido desbloqueado.
               </>
             ) : (
               <>
@@ -102,7 +106,7 @@ const QuizModal: React.FC<Props> = ({ open, onOpenChange, moduleTitle, quiz }) =
             </Button>
           ) : (
             <Button onClick={handleClose} variant="outline">
-              Cerrar
+              {isCorrect ? 'Continuar' : 'Cerrar'}
             </Button>
           )}
         </div>

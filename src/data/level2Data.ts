@@ -85,6 +85,11 @@ export const level2Modules: Level2Module[] = [
       "Alimentación de bases de conocimiento privadas.",
       "Definición de tono e instrucciones estrictas.",
     ],
+    educationalContent: [
+      "Crear un GPT personalizado (Custom GPT) te permite tener un asistente virtual entrenado específicamente para tus necesidades corporativas o personales.",
+      "La verdadera magia de un Agente de IA no está solo en sus instrucciones, sino en su Base de Conocimiento (Knowledge Base). Al subir documentos PDF, hojas de cálculo o manuales de procedimientos corporativos, la IA priorizará esa información privada por encima de lo que sabe de internet, reduciendo drásticamente las alucinaciones.",
+      "Recuerda que debes ser muy claro en la configuración: define un tono de voz y establece qué debe responder si el usuario le pregunta algo fuera de los documentos proporcionados.",
+    ],
     quiz: {
       question: "¿Para qué sirve subir un PDF a un GPT personalizado?",
       options: [
