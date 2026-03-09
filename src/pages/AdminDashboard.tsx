@@ -13,7 +13,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -22,15 +22,13 @@ import {
 import {
   Users, LogOut, TrendingUp, Clock, CheckCircle,
   Sparkles, UserPlus, Copy, Check, Loader2, Filter,
-  Trophy, AlertTriangle,
+  Trophy, AlertTriangle, BookOpen,
 } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Constants } from '@/integrations/supabase/types';
-import { mockAdminData, PROFILE_LABELS, kpiExtras } from '@/data/mockAdminData';
-
-const { metricas } = mockAdminData;
+import { cursosData, PROFILE_LABELS, type CourseData } from '@/data/mockAdminData';
 
 const chartTooltipStyle = {
   backgroundColor: 'hsl(var(--card))',
@@ -39,10 +37,289 @@ const chartTooltipStyle = {
   color: 'hsl(var(--foreground))',
 };
 
+/* ───────── Sub-components ───────── */
+
+const KpiCards: React.FC<{ data: CourseData['kpis'] }> = ({ data }) => (
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    {[
+      { label: 'Total Inscritos', value: data.inscritos, icon: Users, color: 'primary' },
+      { label: 'Finalizados', value: data.finalizados, icon: CheckCircle, color: 'success' },
+      { label: 'Tasa de Finalización', value: data.tasa, icon: TrendingUp, color: 'accent' },
+      { label: 'Pendientes', value: data.pendientes, icon: Clock, color: 'warning' },
+    ].map((kpi) => (
+      <div key={kpi.label} className="stat-card">
+        <div className="flex items-center gap-3">
+          <div className={`p-3 rounded-lg bg-${kpi.color}/10`}>
+            <kpi.icon className={`w-6 h-6 text-${kpi.color}`} />
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">{kpi.label}</p>
+            <p className="text-2xl font-bold text-foreground">{kpi.value}</p>
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
+const DonutChart: React.FC<{ data: CourseData['distribucion']; total: number }> = ({ data, total }) => (
+  <div className="lovirtual-card">
+    <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+      <Users className="w-5 h-5 text-primary" />
+      Distribución de Perfiles
+    </h3>
+    <div className="h-72">
+      <ResponsiveContainer width="100%" height="100%">
+        <PieChart>
+          <Pie
+            data={data}
+            cx="50%"
+            cy="50%"
+            innerRadius={65}
+            outerRadius={105}
+            paddingAngle={4}
+            dataKey="cantidad"
+            nameKey="perfil"
+            label={({ perfil, cantidad }) => `${perfil}: ${cantidad}`}
+          >
+            {data.map((entry, i) => (
+              <Cell key={i} fill={entry.fill} />
+            ))}
+          </Pie>
+          <Tooltip
+            contentStyle={chartTooltipStyle}
+            formatter={(value: number, name: string) => [`Cantidad: ${value}`, name]}
+          />
+          <Legend />
+          <text x="50%" y="46%" textAnchor="middle" dominantBaseline="middle" fill="hsl(var(--foreground))" fontSize="28" fontWeight="bold">
+            {total}
+          </text>
+          <text x="50%" y="55%" textAnchor="middle" dominantBaseline="middle" fill="hsl(var(--muted-foreground))" fontSize="12">
+            Inscritos
+          </text>
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
+  </div>
+);
+
+const TimeBarChart: React.FC<{ data: CourseData['tiempoPromedio'] }> = ({ data }) => (
+  <div className="lovirtual-card">
+    <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+      <Clock className="w-5 h-5 text-accent" />
+      Tiempo Promedio de Finalización por Perfil
+    </h3>
+    <div className="h-72">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={data}>
+          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+          <XAxis
+            dataKey="perfil"
+            tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+            interval={0}
+            angle={-10}
+            textAnchor="end"
+            height={50}
+          />
+          <YAxis
+            tick={{ fill: 'hsl(var(--muted-foreground))' }}
+            label={{ value: 'Horas', angle: -90, position: 'insideLeft', fill: 'hsl(var(--muted-foreground))' }}
+          />
+          <Tooltip contentStyle={chartTooltipStyle} formatter={(v: number) => [`${v}h`, 'Tiempo promedio']} />
+          <Bar dataKey="horas" fill="hsl(var(--accent))" radius={[6, 6, 0, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  </div>
+);
+
+const BestScoreCard: React.FC<{ data: CourseData['puntuacionPromedio'] }> = ({ data }) => {
+  if (data.length === 0) return null;
+  const best = data[0];
+  return (
+    <div className="lovirtual-card flex flex-col items-center justify-center text-center">
+      <div className="p-4 rounded-full bg-warning/10 mb-4">
+        <Trophy className="w-10 h-10 text-warning" />
+      </div>
+      <p className="text-sm text-muted-foreground mb-1">Mejor Puntuación Promedio</p>
+      <p className="text-4xl font-bold text-foreground mb-1">{best.puntuacion}</p>
+      <p className="text-lg font-semibold text-primary">{best.perfil}</p>
+      <div className="mt-4 w-full space-y-2">
+        {data.slice(1).map((p, i) => (
+          <div key={i} className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">{p.perfil}</span>
+            <span className="font-semibold text-foreground">{p.puntuacion}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const ErrorRateTable: React.FC<{ data: CourseData['errores'] }> = ({ data }) => (
+  <div className="lovirtual-card">
+    <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+      <AlertTriangle className="w-5 h-5 text-destructive" />
+      Mayor Índice de Error por Perfil
+    </h3>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead className="w-12">#</TableHead>
+          <TableHead>Perfil</TableHead>
+          <TableHead className="text-right">Tasa de Error</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {data.map((item, i) => (
+          <TableRow key={i}>
+            <TableCell className="font-medium text-muted-foreground">{i + 1}</TableCell>
+            <TableCell className="font-medium text-foreground">{item.perfil}</TableCell>
+            <TableCell className="text-right">
+              <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${
+                parseFloat(item.tasa) >= 15
+                  ? 'bg-destructive/10 text-destructive'
+                  : parseFloat(item.tasa) >= 10
+                  ? 'bg-warning/10 text-warning'
+                  : 'bg-success/10 text-success'
+              }`}>
+                {item.tasa}
+              </span>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  </div>
+);
+
+const StudentTable: React.FC<{ estudiantes: CourseData['estudiantes'] }> = ({ estudiantes }) => {
+  const [statusFilter, setStatusFilter] = useState('todos');
+  const [profileFilter, setProfileFilter] = useState('todos');
+
+  const filtered = useMemo(() => {
+    return estudiantes.filter((s) => {
+      const statusMatch =
+        statusFilter === 'todos' ||
+        (statusFilter === 'finalizados' && s.certificado === 'Generado') ||
+        (statusFilter === 'pendientes' && s.certificado === 'Pendiente');
+      const profileMatch = profileFilter === 'todos' || s.perfil === profileFilter;
+      return statusMatch && profileMatch;
+    });
+  }, [statusFilter, profileFilter, estudiantes]);
+
+  const finCount = estudiantes.filter(s => s.certificado === 'Generado').length;
+  const penCount = estudiantes.filter(s => s.certificado === 'Pendiente').length;
+
+  return (
+    <div className="lovirtual-card">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <h3 className="font-semibold text-foreground flex items-center gap-2">
+          <Users className="w-5 h-5 text-primary" />
+          Lista de Estudiantes
+        </h3>
+        <div className="flex items-center gap-2">
+          <Filter className="w-4 h-4 text-muted-foreground" />
+          <Select value={profileFilter} onValueChange={setProfileFilter}>
+            <SelectTrigger className="w-[200px] h-9 text-sm">
+              <SelectValue placeholder="Filtrar por perfil" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos los perfiles</SelectItem>
+              <SelectItem value="admin">Administrativo</SelectItem>
+              <SelectItem value="contable">Contable</SelectItem>
+              <SelectItem value="cm">Community Manager</SelectItem>
+              <SelectItem value="diseno">Diseñador Gráfico</SelectItem>
+              <SelectItem value="atencion_ventas">Atención al Cliente / Ventas</SelectItem>
+              <SelectItem value="admin_bilingue">Administrativo Bilingüe</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <Tabs value={statusFilter} onValueChange={setStatusFilter} className="mb-4">
+        <TabsList>
+          <TabsTrigger value="todos">Todos ({estudiantes.length})</TabsTrigger>
+          <TabsTrigger value="finalizados">Finalizados ({finCount})</TabsTrigger>
+          <TabsTrigger value="pendientes">Pendientes ({penCount})</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Nombre</TableHead>
+              <TableHead>Perfil</TableHead>
+              <TableHead>Progreso</TableHead>
+              <TableHead>Puntuación</TableHead>
+              <TableHead>Última Actividad</TableHead>
+              <TableHead>Certificado</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filtered.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                  No se encontraron estudiantes con los filtros seleccionados.
+                </TableCell>
+              </TableRow>
+            ) : (
+              filtered.map((s) => (
+                <TableRow key={s.id}>
+                  <TableCell>
+                    <p className="font-medium text-foreground">{s.nombre}</p>
+                  </TableCell>
+                  <TableCell>
+                    <Badge className="bg-primary/15 text-primary border-primary/20 hover:bg-primary/20 text-xs">
+                      {PROFILE_LABELS[s.perfil] || s.perfil}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Progress value={s.progreso} className="w-24 h-2" />
+                      <span className="text-sm text-muted-foreground">{s.progreso}%</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <span className={`font-semibold ${
+                      s.puntuacion === '100%' ? 'text-success' :
+                      s.puntuacion === '-%' ? 'text-muted-foreground' : 'text-foreground'
+                    }`}>
+                      {s.puntuacion}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">{s.actividad}</TableCell>
+                  <TableCell>
+                    {s.certificado === 'Generado' ? (
+                      <Badge className="bg-success/15 text-success border-success/20 hover:bg-success/20 gap-1">
+                        <CheckCircle className="w-3 h-3" />
+                        Generado
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-muted-foreground gap-1">
+                        Pendiente
+                      </Badge>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+};
+
+/* ───────── Main Dashboard ───────── */
 
 const AdminDashboard: React.FC = () => {
-  const { logout, students } = useAuth();
+  const { logout } = useAuth();
   const navigate = useNavigate();
+  const [activeCourse, setActiveCourse] = useState('nivel1');
+
+  // Create user dialog state
   const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [newRole, setNewRole] = useState('');
@@ -51,9 +328,7 @@ const AdminDashboard: React.FC = () => {
   const [createdInfo, setCreatedInfo] = useState<{ email: string; password: string } | null>(null);
   const [copiedPwd, setCopiedPwd] = useState(false);
 
-  // Filters
-  const [statusFilter, setStatusFilter] = useState('todos');
-  const [profileFilter, setProfileFilter] = useState('todos');
+  const courseData = cursosData[activeCourse];
 
   const handleLogout = () => { logout(); navigate('/'); };
 
@@ -90,37 +365,6 @@ const AdminDashboard: React.FC = () => {
     setCreatedInfo(null); setIsDialogOpen(false);
   };
 
-  // Map real students to table shape
-  const estudiantes = useMemo(() => {
-    return students.map((s) => ({
-      id: s.id,
-      nombre: s.name,
-      email: s.email,
-      perfil: s.code, // lovirtual_role stored as code
-      progreso: s.progress,
-      puntuacion: s.averageScore > 0 ? `${s.averageScore}%` : '-%',
-      actividad: s.lastActive || s.enrolledAt || '-',
-      certificado: s.certificateGenerated ? 'Generado' : 'Pendiente',
-    }));
-  }, [students]);
-
-  // Filtered students
-  const filteredStudents = useMemo(() => {
-    return estudiantes.filter((s) => {
-      const statusMatch =
-        statusFilter === 'todos' ||
-        (statusFilter === 'finalizados' && s.certificado === 'Generado') ||
-        (statusFilter === 'pendientes' && s.certificado === 'Pendiente');
-      const profileMatch = profileFilter === 'todos' || s.perfil === profileFilter;
-      return statusMatch && profileMatch;
-    });
-  }, [statusFilter, profileFilter, estudiantes]);
-
-  // All available profiles for filter dropdown
-  const uniqueProfiles = useMemo(() => {
-    return Object.keys(PROFILE_LABELS);
-  }, []);
-
   return (
     <div className="min-h-screen bg-background">
       <header className="bg-card border-b border-border sticky top-0 z-50">
@@ -145,33 +389,22 @@ const AdminDashboard: React.FC = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <div className="stat-card">
-            <div className="flex items-center gap-3">
-              <div className="p-3 rounded-lg bg-primary/10"><Users className="w-6 h-6 text-primary" /></div>
-              <div><p className="text-sm text-muted-foreground">Total Inscritos</p><p className="text-2xl font-bold text-foreground">{metricas.totalInscritos}</p></div>
-            </div>
-          </div>
-          <div className="stat-card">
-            <div className="flex items-center gap-3">
-              <div className="p-3 rounded-lg bg-success/10"><CheckCircle className="w-6 h-6 text-success" /></div>
-              <div><p className="text-sm text-muted-foreground">Finalizados</p><p className="text-2xl font-bold text-foreground">{metricas.totalFinalizados}</p></div>
-            </div>
-          </div>
-          <div className="stat-card">
-            <div className="flex items-center gap-3">
-              <div className="p-3 rounded-lg bg-accent/10"><TrendingUp className="w-6 h-6 text-accent" /></div>
-              <div><p className="text-sm text-muted-foreground">Tasa de Finalización</p><p className="text-2xl font-bold text-foreground">{Math.round((metricas.totalFinalizados / metricas.totalInscritos) * 100)}%</p></div>
-            </div>
-          </div>
-          <div className="stat-card">
-            <div className="flex items-center gap-3">
-              <div className="p-3 rounded-lg bg-warning/10"><Clock className="w-6 h-6 text-warning" /></div>
-              <div><p className="text-sm text-muted-foreground">Pendientes</p><p className="text-2xl font-bold text-foreground">{metricas.totalInscritos - metricas.totalFinalizados}</p></div>
-            </div>
-          </div>
-        </div>
+        {/* Course Tabs */}
+        <Tabs value={activeCourse} onValueChange={setActiveCourse} className="mb-8">
+          <TabsList className="grid w-full max-w-lg grid-cols-2 mx-auto">
+            <TabsTrigger value="nivel1" className="gap-2 text-sm">
+              <BookOpen className="w-4 h-4" />
+              Nivel 1: Fundamentos de IA
+            </TabsTrigger>
+            <TabsTrigger value="nivel2" className="gap-2 text-sm">
+              <BookOpen className="w-4 h-4" />
+              Nivel 2: Implementación
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        {/* KPI Cards */}
+        <KpiCards data={courseData.kpis} />
 
         {/* Create User Button */}
         <div className="flex justify-end mb-6">
@@ -237,242 +470,18 @@ const AdminDashboard: React.FC = () => {
 
         {/* Charts Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* Donut - Distribución de Perfiles */}
-          <div className="lovirtual-card">
-            <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-              <Users className="w-5 h-5 text-primary" />
-              Distribución de Perfiles
-            </h3>
-            <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={metricas.distribucionPerfiles}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={65}
-                    outerRadius={105}
-                    paddingAngle={4}
-                    dataKey="cantidad"
-                    nameKey="perfil"
-                    label={({ perfil, cantidad }) => `${perfil}: ${cantidad}`}
-                  >
-                  {metricas.distribucionPerfiles.map((entry, i) => (
-                      <Cell key={i} fill={entry.fill} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={chartTooltipStyle}
-                    formatter={(value: number, name: string) => [`Cantidad de usuarios: ${value}`, name]}
-                  />
-                  <Legend />
-                  {/* Center text */}
-                  <text x="50%" y="46%" textAnchor="middle" dominantBaseline="middle" fill="hsl(var(--foreground))" fontSize="28" fontWeight="bold">
-                    {metricas.totalInscritos}
-                  </text>
-                  <text x="50%" y="55%" textAnchor="middle" dominantBaseline="middle" fill="hsl(var(--muted-foreground))" fontSize="12">
-                    Inscritos
-                  </text>
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* Bar Chart - Tiempo de Finalización */}
-          <div className="lovirtual-card">
-            <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-              <Clock className="w-5 h-5 text-accent" />
-              Tiempo Promedio de Finalización por Perfil
-            </h3>
-            <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={metricas.tiempoFinalizacionPromedio}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis
-                    dataKey="perfil"
-                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
-                    interval={0}
-                    angle={-10}
-                    textAnchor="end"
-                    height={50}
-                  />
-                  <YAxis
-                    tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                    label={{ value: 'Horas', angle: -90, position: 'insideLeft', fill: 'hsl(var(--muted-foreground))' }}
-                  />
-                  <Tooltip
-                    contentStyle={chartTooltipStyle}
-                    formatter={(v: number) => [`${v}h`, 'Tiempo promedio']}
-                  />
-                  <Bar dataKey="horas" fill="hsl(var(--accent))" radius={[6, 6, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
+          <DonutChart data={courseData.distribucion} total={courseData.kpis.inscritos} />
+          <TimeBarChart data={courseData.tiempoPromedio} />
         </div>
 
         {/* Best Score + Error Rate */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* Best Score KPI */}
-          <div className="lovirtual-card flex flex-col items-center justify-center text-center">
-            <div className="p-4 rounded-full bg-warning/10 mb-4">
-              <Trophy className="w-10 h-10 text-warning" />
-            </div>
-            <p className="text-sm text-muted-foreground mb-1">Mejor Puntuación Promedio</p>
-            <p className="text-4xl font-bold text-foreground mb-1">{kpiExtras.puntuacionPromedio[0].puntuacion}</p>
-            <p className="text-lg font-semibold text-primary">{kpiExtras.puntuacionPromedio[0].perfil}</p>
-            <div className="mt-4 w-full space-y-2">
-              {kpiExtras.puntuacionPromedio.slice(1).map((p, i) => (
-                <div key={i} className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">{p.perfil}</span>
-                  <span className="font-semibold text-foreground">{p.puntuacion}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Error Rate Table */}
-          <div className="lovirtual-card">
-            <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-destructive" />
-              Mayor Índice de Error por Perfil
-            </h3>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12">#</TableHead>
-                  <TableHead>Perfil</TableHead>
-                  <TableHead className="text-right">Tasa de Error</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {kpiExtras.tasaErroresRespuestas.map((item, i) => (
-                  <TableRow key={i}>
-                    <TableCell className="font-medium text-muted-foreground">{i + 1}</TableCell>
-                    <TableCell className="font-medium text-foreground">{item.perfil}</TableCell>
-                    <TableCell className="text-right">
-                      <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${
-                        parseFloat(item.tasaError) >= 15
-                          ? 'bg-destructive/10 text-destructive'
-                          : parseFloat(item.tasaError) >= 10
-                          ? 'bg-warning/10 text-warning'
-                          : 'bg-success/10 text-success'
-                      }`}>
-                        {item.tasaError}
-                      </span>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+          <BestScoreCard data={courseData.puntuacionPromedio} />
+          <ErrorRateTable data={courseData.errores} />
         </div>
 
-        <div className="lovirtual-card">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-            <h3 className="font-semibold text-foreground flex items-center gap-2">
-              <Users className="w-5 h-5 text-primary" />
-              Lista de Estudiantes
-            </h3>
-            <div className="flex items-center gap-3">
-              {/* Profile filter */}
-              <div className="flex items-center gap-2">
-                <Filter className="w-4 h-4 text-muted-foreground" />
-                <Select value={profileFilter} onValueChange={setProfileFilter}>
-                  <SelectTrigger className="w-[180px] h-9 text-sm">
-                    <SelectValue placeholder="Filtrar por perfil" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos los perfiles</SelectItem>
-                    {uniqueProfiles.map((p) => (
-                      <SelectItem key={p} value={p}>{PROFILE_LABELS[p] || p}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
-
-          {/* Status tabs */}
-          <Tabs value={statusFilter} onValueChange={setStatusFilter} className="mb-4">
-            <TabsList>
-              <TabsTrigger value="todos">Todos ({estudiantes.length})</TabsTrigger>
-              <TabsTrigger value="finalizados">
-                Finalizados ({estudiantes.filter(s => s.certificado === 'Generado').length})
-              </TabsTrigger>
-              <TabsTrigger value="pendientes">
-                Pendientes ({estudiantes.filter(s => s.certificado === 'Pendiente').length})
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nombre</TableHead>
-                  <TableHead>Perfil</TableHead>
-                  <TableHead>Progreso</TableHead>
-                  <TableHead>Puntuación</TableHead>
-                  <TableHead>Última Actividad</TableHead>
-                  <TableHead>Certificado</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredStudents.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                      No se encontraron estudiantes con los filtros seleccionados.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredStudents.map((student) => (
-                    <TableRow key={student.id}>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium text-foreground">{student.nombre}</p>
-                          <p className="text-sm text-muted-foreground">{student.email}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary" className="text-xs">
-                          {PROFILE_LABELS[student.perfil] || student.perfil}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Progress value={student.progreso} className="w-24 h-2" />
-                          <span className="text-sm text-muted-foreground">{student.progreso}%</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <span className={`font-semibold ${
-                          student.puntuacion === '100%' ? 'text-success' :
-                          student.puntuacion === '-%' ? 'text-muted-foreground' : 'text-foreground'
-                        }`}>
-                          {student.puntuacion}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">{student.actividad}</TableCell>
-                      <TableCell>
-                        {student.certificado === 'Generado' ? (
-                          <Badge className="bg-success/15 text-success border-success/20 hover:bg-success/20 gap-1">
-                            <CheckCircle className="w-3 h-3" />
-                            Generado
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-muted-foreground gap-1">
-                            Pendiente
-                          </Badge>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </div>
+        {/* Student Table */}
+        <StudentTable estudiantes={courseData.estudiantes} />
       </main>
     </div>
   );
