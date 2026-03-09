@@ -9,10 +9,7 @@ import {
   LogOut,
   Sparkles,
   BookOpen,
-  Trophy,
   Clock,
-  Lock,
-  Award,
   ChevronDown,
 } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
