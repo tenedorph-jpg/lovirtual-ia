@@ -11,6 +11,7 @@ import {
   BookOpen,
   Clock,
   ChevronDown,
+  Trophy,
 } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 import CourseAccordion from '@/components/CourseAccordion';
