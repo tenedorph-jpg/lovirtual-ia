@@ -87,6 +87,48 @@ const Level2Page: React.FC = () => {
             onModuleComplete={handleModuleComplete}
           />
         </div>
+
+        {/* Final Exam & Certificate CTA */}
+        <div className="lovirtual-card">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="p-4 rounded-xl bg-warning/10">
+                <Trophy className="w-8 h-8 text-warning" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-foreground">Examen Final y Certificación — Nivel 2</h3>
+                <p className="text-muted-foreground">
+                  Completa los {totalLevel2Modules} módulos para desbloquear el examen final
+                </p>
+              </div>
+            </div>
+            <Button
+              size="lg"
+              disabled={!allLevel2Completed}
+              onClick={() => navigate('/level-2/final-exam')}
+              className={allLevel2Completed ? 'lovirtual-gradient-bg text-white animate-pulse-glow' : ''}
+            >
+              {allLevel2Completed ? (
+                currentStudent?.certificateGenerated ? (
+                  <>
+                    <Award className="w-5 h-5 mr-2" />
+                    Ver Certificado
+                  </>
+                ) : (
+                  <>
+                    <Trophy className="w-5 h-5 mr-2" />
+                    Tomar Examen Final
+                  </>
+                )
+              ) : (
+                <>
+                  <Lock className="w-5 h-5 mr-2" />
+                  {completedLevel2Count}/{totalLevel2Modules} Módulos
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
       </main>
     </div>
   );
