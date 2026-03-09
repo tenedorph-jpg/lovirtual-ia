@@ -64,6 +64,11 @@ export const level2Modules: Level2Module[] = [
       "Diseño de System Prompts efectivos.",
       "Manejo de variables y Few-Shot avanzado.",
     ],
+    educationalContent: [
+      "Bienvenido al Nivel 2. Para dominar verdaderamente la Inteligencia Artificial, debemos pasar de hacer preguntas simples a construir flujos de trabajo estructurados.",
+      "Una de las técnicas más poderosas es el 'Prompt Chaining' (Encadenamiento de Prompts). Esto significa que en lugar de pedirle a la IA que haga una tarea masiva en un solo paso, divides la tarea en pequeños pasos secuenciales. La salida del primer prompt se convierte en el contexto o la entrada del segundo prompt.",
+      "Además, es fundamental dominar el 'System Prompt'. Esta es la instrucción maestra que le da una personalidad, reglas estrictas y un marco de referencia a la IA antes de que interactúe con el usuario final. Lee este material atentamente antes de proceder al quiz.",
+    ],
     quiz: {
       question: "¿Qué técnica implica usar la salida de un prompt como entrada para el siguiente?",
       options: ["Zero-Shot", "Prompt Chaining", "Fine-tuning", "RAG"],
