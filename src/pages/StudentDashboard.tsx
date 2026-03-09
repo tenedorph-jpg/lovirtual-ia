@@ -12,6 +12,8 @@ import {
   Clock,
   ChevronDown,
   Trophy,
+  Lock,
+  Award,
 } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 import CourseAccordion from '@/components/CourseAccordion';
