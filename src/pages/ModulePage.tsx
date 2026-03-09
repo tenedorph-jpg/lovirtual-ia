@@ -406,8 +406,8 @@ const ModulePage: React.FC = () => {
                   </div>
                 )}
 
-                {/* Certificate download button — Module 10 only */}
-                {isModule10 && passed && (
+                {/* Certificate download button — all modules */}
+                {passed && (
                   <Button
                     size="lg"
                     onClick={async () => {
