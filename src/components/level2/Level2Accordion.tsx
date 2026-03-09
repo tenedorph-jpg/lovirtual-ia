@@ -14,7 +14,7 @@ import AIEvaluationSimulator from './AIEvaluationSimulator';
 interface Props {
   modules: Level2Module[];
   completedModules: number[];
-  onModuleComplete?: (moduleId: number) => void;
+  onModuleComplete?: (moduleId: number, score?: number) => void;
 }
 
 const Level2Accordion: React.FC<Props> = ({ modules, completedModules, onModuleComplete }) => {
