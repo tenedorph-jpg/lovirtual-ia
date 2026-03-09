@@ -116,6 +116,11 @@ export const level2Modules: Level2Module[] = [
       "Una vez que tus datos están limpios, puedes pedirle a la IA que genere gráficos y visualizaciones directamente desde archivos CSV o tablas de Excel. Herramientas como ChatGPT con Code Interpreter o Claude pueden crear gráficos de barras, líneas de tendencia y diagramas de pastel con un solo prompt bien estructurado.",
       "El paso final es la generación de reportes ejecutivos. Un buen prompt puede transformar una tabla de datos crudos en un resumen narrativo con conclusiones clave, recomendaciones y próximos pasos. Dominar esta habilidad te convierte en alguien que no solo presenta datos, sino que cuenta historias con ellos.",
     ],
+    quiz: {
+      question: "¿Cuál es el beneficio principal de limpiar datos antes de analizarlos con IA?",
+      options: ["Que los gráficos se vean más bonitos", "Que los resultados sean precisos y confiables", "Que el proceso sea más lento pero seguro", "Que se reduzca el tamaño del archivo"],
+      correctAnswer: "Que los resultados sean precisos y confiables",
+    },
   },
   {
     id: 4,
