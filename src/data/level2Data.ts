@@ -242,6 +242,11 @@ export const level2Modules: Level2Module[] = [
       "Supabase es una plataforma de backend que te permite crear tablas de datos, gestionar usuarios y establecer reglas de seguridad sin necesidad de configurar servidores. Piensa en ello como una hoja de cálculo superpotente que vive en la nube y a la que tu aplicación puede acceder en tiempo real.",
       "Lo fascinante de combinar Lovable con datos reales es que la IA puede generar interfaces completas —tablas, formularios, dashboards— directamente a partir de la estructura de tus datos. Describes lo que necesitas, y la IA crea componentes React funcionales que leen y escriben en tu base de datos automáticamente.",
     ],
+    quiz: {
+      question: "¿Cuál es la función principal del Backend en una aplicación web?",
+      options: ["Diseñar los colores y tipografías", "Almacenar datos y ejecutar lógica de negocio", "Mostrar botones e imágenes al usuario", "Optimizar el SEO del sitio"],
+      correctAnswer: "Almacenar datos y ejecutar lógica de negocio",
+    },
   },
   {
     id: 10,
