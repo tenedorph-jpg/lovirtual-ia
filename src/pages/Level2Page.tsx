@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ import { learningPath, level2Modules, studentInfo } from '@/data/level2Data';
 const Level2Page: React.FC = () => {
   const { currentStudent, logout } = useAuth();
   const navigate = useNavigate();
+  const [completedModules, setCompletedModules] = useState<number[]>([]);
 
   if (!currentStudent) {
     navigate('/');
@@ -21,6 +22,12 @@ const Level2Page: React.FC = () => {
   const handleLogout = () => {
     logout();
     navigate('/');
+  };
+
+  const handleModuleComplete = (moduleId: number) => {
+    setCompletedModules((prev) =>
+      prev.includes(moduleId) ? prev : [...prev, moduleId]
+    );
   };
 
   return (
@@ -72,7 +79,7 @@ const Level2Page: React.FC = () => {
           <h3 className="text-xl font-bold text-foreground mb-4">
             Nivel 2: Implementación y Automatización
           </h3>
-          <Level2Accordion modules={level2Modules} completedModules={[]} />
+          <Level2Accordion modules={level2Modules} completedModules={completedModules} onModuleComplete={handleModuleComplete} />
         </div>
       </main>
     </div>
