@@ -40,9 +40,9 @@ const ModulePage: React.FC = () => {
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [claudeEval, setClaudeEval] = useState<ClaudeEvaluation | null>(null);
 
-  const isModule10 = module.id === 10;
-
   const module = courseModules.find(m => m.id === parseInt(moduleId || '0'));
+
+  const isModule10 = module?.id === 10;
 
   if (!module || !currentStudent) {
     navigate('/dashboard');
