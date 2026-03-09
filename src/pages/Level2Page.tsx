@@ -12,6 +12,7 @@ import { learningPath, level2Modules, studentInfo } from '@/data/level2Data';
 const Level2Page: React.FC = () => {
   const { currentStudent, logout } = useAuth();
   const navigate = useNavigate();
+  const [completedModules, setCompletedModules] = useState<number[]>([]);
 
   if (!currentStudent) {
     navigate('/');
@@ -21,6 +22,12 @@ const Level2Page: React.FC = () => {
   const handleLogout = () => {
     logout();
     navigate('/');
+  };
+
+  const handleModuleComplete = (moduleId: number) => {
+    setCompletedModules((prev) =>
+      prev.includes(moduleId) ? prev : [...prev, moduleId]
+    );
   };
 
   return (
