@@ -6,10 +6,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, XCircle, Download, Loader2 } from 'lucide-react';
+import { CheckCircle, XCircle } from 'lucide-react';
 import type { Quiz } from '@/data/level2Data';
-import { generateCertificatePDF } from '@/lib/generateCertificate';
-import { useAuth } from '@/contexts/AuthContext';
 
 interface Props {
   open: boolean;
@@ -20,10 +18,8 @@ interface Props {
 }
 
 const QuizModal: React.FC<Props> = ({ open, onOpenChange, moduleTitle, quiz, onCorrectAnswer }) => {
-  const { currentStudent } = useAuth();
   const [selected, setSelected] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
-  const [isGeneratingCert, setIsGeneratingCert] = useState(false);
 
   const isCorrect = selected === quiz.correctAnswer;
 
@@ -103,34 +99,15 @@ const QuizModal: React.FC<Props> = ({ open, onOpenChange, moduleTitle, quiz, onC
           </div>
         )}
 
-        <div className="mt-4 flex justify-end gap-2 flex-wrap">
+        <div className="mt-4 flex justify-end gap-2">
           {!submitted ? (
             <Button onClick={handleSubmit} disabled={!selected} className="lovirtual-gradient-bg text-white">
               Enviar Respuesta
             </Button>
           ) : (
-            <>
-              {isCorrect && (
-                <Button
-                  onClick={async () => {
-                    setIsGeneratingCert(true);
-                    await generateCertificatePDF(currentStudent?.name ?? 'Estudiante', 100);
-                    setIsGeneratingCert(false);
-                  }}
-                  disabled={isGeneratingCert}
-                  className="lovirtual-gradient-bg text-white gap-2"
-                >
-                  {isGeneratingCert ? (
-                    <><Loader2 className="w-4 h-4 animate-spin" />Generando...</>
-                  ) : (
-                    <><Download className="w-4 h-4" />Descargar Certificado</>
-                  )}
-                </Button>
-              )}
-              <Button onClick={handleClose} variant="outline">
-                {isCorrect ? 'Continuar' : 'Cerrar'}
-              </Button>
-            </>
+            <Button onClick={handleClose} variant="outline">
+              {isCorrect ? 'Continuar' : 'Cerrar'}
+            </Button>
           )}
         </div>
       </DialogContent>
