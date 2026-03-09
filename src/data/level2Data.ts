@@ -221,6 +221,11 @@ export const level2Modules: Level2Module[] = [
       "Google Apps Script te permite llamar a la API de OpenAI directamente desde Google Sheets. Esto significa que puedes crear una función personalizada donde escribes un prompt en una celda y la respuesta de la IA aparece automáticamente en otra celda. Imagina clasificar cientos de comentarios de clientes, generar descripciones de productos o traducir contenido, todo desde tu hoja de cálculo.",
       "La clave técnica es entender tres conceptos: el endpoint (la URL a la que envías tu petición), el método HTTP (GET para obtener datos, POST para enviar datos) y la autenticación (tu API key que identifica quién eres). Con Apps Script, todo esto se maneja con la función UrlFetchApp.fetch(), y la IA misma puede ayudarte a escribir el código.",
     ],
+    quiz: {
+      question: "¿Qué función de Google Apps Script se usa para hacer llamadas a APIs externas como OpenAI?",
+      options: ["SpreadsheetApp.open()", "UrlFetchApp.fetch()", "DriveApp.getFiles()", "HtmlService.create()"],
+      correctAnswer: "UrlFetchApp.fetch()",
+    },
   },
   {
     id: 9,
