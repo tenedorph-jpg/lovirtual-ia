@@ -158,6 +158,19 @@ const StudentDashboard: React.FC = () => {
           />
         </div>
 
+        {/* Level 2 CTA */}
+        <div className="lovirtual-card mb-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-xl font-bold text-foreground">Nivel 2: Implementación y Automatización</h3>
+              <p className="text-muted-foreground text-sm">Continúa tu ruta de aprendizaje con módulos avanzados</p>
+            </div>
+            <Button onClick={() => navigate('/level-2')} className="lovirtual-gradient-bg text-white gap-2">
+              <Sparkles className="w-4 h-4" />
+              Ver Ruta de Aprendizaje
+            </Button>
+          </div>
+        </div>
         {/* Final Exam Section */}
         <div className="lovirtual-card">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
