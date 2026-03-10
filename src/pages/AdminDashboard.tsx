@@ -434,6 +434,10 @@ const AdminDashboard: React.FC = () => {
                       <Input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="Ej: maria@empresa.com" className="mt-1" />
                     </div>
                     <div>
+                      <label className="text-sm font-medium text-foreground">Contraseña</label>
+                      <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Mínimo 6 caracteres" className="mt-1" />
+                    </div>
+                    <div>
                       <label className="text-sm font-medium text-foreground">Jerarquía</label>
                       <Select value={newHierarchy} onValueChange={(v) => setNewHierarchy(v as 'assistant' | 'admin')}>
                         <SelectTrigger className="mt-1">
