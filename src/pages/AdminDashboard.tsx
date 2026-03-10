@@ -429,6 +429,18 @@ const AdminDashboard: React.FC = () => {
                       <Input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="Ej: maria@empresa.com" className="mt-1" />
                     </div>
                     <div>
+                      <label className="text-sm font-medium text-foreground">Jerarquía</label>
+                      <Select value={newHierarchy} onValueChange={(v) => setNewHierarchy(v as 'assistant' | 'admin')}>
+                        <SelectTrigger className="mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="assistant">Asistente Virtual</SelectItem>
+                          <SelectItem value="admin">Administrador</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
                       <label className="text-sm font-medium text-foreground">Rol</label>
                       <Select value={newRole} onValueChange={setNewRole}>
                         <SelectTrigger className="mt-1">

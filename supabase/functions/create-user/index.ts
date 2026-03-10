@@ -79,6 +79,14 @@ Deno.serve(async (req) => {
       });
     }
 
+    // If hierarchy is admin, assign admin role
+    if (hierarchy === "admin") {
+      await adminClient.from("user_roles").insert({
+        user_id: newUser.user.id,
+        role: "admin",
+      });
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
