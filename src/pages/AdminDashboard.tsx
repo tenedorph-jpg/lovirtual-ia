@@ -194,7 +194,7 @@ const ErrorRateTable: React.FC<{ data: CourseData['errores'] }> = ({ data }) => 
   </div>
 );
 
-const StudentTable: React.FC<{ estudiantes: CourseData['estudiantes'] }> = ({ estudiantes }) => {
+const StudentTable: React.FC<{ estudiantes: { id: string | number; nombre: string; perfil: string; progreso: number; puntuacion: string; actividad: string; certificado: string }[] }> = ({ estudiantes }) => {
   const [statusFilter, setStatusFilter] = useState('todos');
   const [profileFilter, setProfileFilter] = useState('todos');
 
