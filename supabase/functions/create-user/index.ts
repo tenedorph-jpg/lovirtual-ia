@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { full_name, email, lovirtual_role, hierarchy } = await req.json();
+    const { full_name, email, password, lovirtual_role, hierarchy } = await req.json();
 
     if (!full_name || !email || !lovirtual_role) {
       return new Response(JSON.stringify({ error: "Faltan campos requeridos" }), {
@@ -58,8 +58,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Generate a temporary password
-    const tempPassword = crypto.randomUUID().slice(0, 12) + "A1!";
+    // Use provided password or generate a temporary one
+    const userPassword = password && password.length >= 6 ? password : crypto.randomUUID().slice(0, 12) + "A1!";
 
     // Create user with admin API
     const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
