@@ -320,6 +320,9 @@ const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [activeCourse, setActiveCourse] = useState('nivel1');
 
+  // Real data from Supabase
+  const realData = useAdminStudents();
+
   // Create user dialog state
   const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');
@@ -331,7 +334,15 @@ const AdminDashboard: React.FC = () => {
   const [createdInfo, setCreatedInfo] = useState<{ email: string; password: string } | null>(null);
   const [copiedPwd, setCopiedPwd] = useState(false);
 
-  const courseData = cursosData[activeCourse];
+  // For nivel1 use real data, nivel2 keep mock for now
+  const courseData = activeCourse === 'nivel1'
+    ? {
+        ...cursosData.nivel1,
+        kpis: realData.kpis,
+        distribucion: realData.distribucion,
+        estudiantes: realData.estudiantes,
+      }
+    : cursosData.nivel2;
 
   const handleLogout = () => { logout(); navigate('/'); };
 
