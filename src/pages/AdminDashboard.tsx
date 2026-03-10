@@ -367,7 +367,7 @@ const AdminDashboard: React.FC = () => {
   };
 
   const resetDialog = () => {
-    setNewName(''); setNewEmail(''); setNewRole(''); setNewHierarchy('assistant');
+    setNewName(''); setNewEmail(''); setNewPassword(''); setNewRole(''); setNewHierarchy('assistant');
     setCreatedInfo(null); setIsDialogOpen(false);
   };
 
