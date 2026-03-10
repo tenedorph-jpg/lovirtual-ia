@@ -335,7 +335,11 @@ const AdminDashboard: React.FC = () => {
   const handleLogout = () => { logout(); navigate('/'); };
 
   const handleCreateUser = async () => {
-    if (!newName.trim() || !newEmail.trim() || !newRole) return;
+    if (!newName.trim() || !newEmail.trim() || !newPassword.trim() || !newRole) return;
+    if (newPassword.length < 6) {
+      toast({ title: 'Error', description: 'La contraseña debe tener al menos 6 caracteres', variant: 'destructive' });
+      return;
+    }
     setCreating(true);
     try {
       const res = await supabase.functions.invoke('create-user', {
