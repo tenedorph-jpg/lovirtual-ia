@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { full_name, email, lovirtual_role } = await req.json();
+    const { full_name, email, lovirtual_role, hierarchy } = await req.json();
 
     if (!full_name || !email || !lovirtual_role) {
       return new Response(JSON.stringify({ error: "Faltan campos requeridos" }), {
@@ -76,6 +76,14 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: createError.message }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // If hierarchy is admin, assign admin role
+    if (hierarchy === "admin") {
+      await adminClient.from("user_roles").insert({
+        user_id: newUser.user.id,
+        role: "admin",
       });
     }
 

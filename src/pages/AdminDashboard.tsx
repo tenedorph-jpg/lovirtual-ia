@@ -323,6 +323,7 @@ const AdminDashboard: React.FC = () => {
   const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [newRole, setNewRole] = useState('');
+  const [newHierarchy, setNewHierarchy] = useState<'assistant' | 'admin'>('assistant');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [createdInfo, setCreatedInfo] = useState<{ email: string; password: string } | null>(null);
@@ -337,7 +338,7 @@ const AdminDashboard: React.FC = () => {
     setCreating(true);
     try {
       const res = await supabase.functions.invoke('create-user', {
-        body: { full_name: newName.trim(), email: newEmail.trim(), lovirtual_role: newRole },
+        body: { full_name: newName.trim(), email: newEmail.trim(), lovirtual_role: newRole, hierarchy: newHierarchy },
       });
       if (res.error || res.data?.error) {
         toast({ title: 'Error', description: res.data?.error || res.error?.message || 'Error al crear usuario', variant: 'destructive' });
@@ -361,7 +362,7 @@ const AdminDashboard: React.FC = () => {
   };
 
   const resetDialog = () => {
-    setNewName(''); setNewEmail(''); setNewRole('');
+    setNewName(''); setNewEmail(''); setNewRole(''); setNewHierarchy('assistant');
     setCreatedInfo(null); setIsDialogOpen(false);
   };
 
@@ -426,6 +427,18 @@ const AdminDashboard: React.FC = () => {
                     <div>
                       <label className="text-sm font-medium text-foreground">Correo Electrónico</label>
                       <Input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="Ej: maria@empresa.com" className="mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-foreground">Jerarquía</label>
+                      <Select value={newHierarchy} onValueChange={(v) => setNewHierarchy(v as 'assistant' | 'admin')}>
+                        <SelectTrigger className="mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="assistant">Asistente Virtual</SelectItem>
+                          <SelectItem value="admin">Administrador</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-foreground">Rol</label>
