@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { full_name, email, lovirtual_role } = await req.json();
+    const { full_name, email, lovirtual_role, hierarchy } = await req.json();
 
     if (!full_name || !email || !lovirtual_role) {
       return new Response(JSON.stringify({ error: "Faltan campos requeridos" }), {
