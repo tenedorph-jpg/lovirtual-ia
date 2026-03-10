@@ -343,7 +343,7 @@ const AdminDashboard: React.FC = () => {
     setCreating(true);
     try {
       const res = await supabase.functions.invoke('create-user', {
-        body: { full_name: newName.trim(), email: newEmail.trim(), lovirtual_role: newRole, hierarchy: newHierarchy },
+        body: { full_name: newName.trim(), email: newEmail.trim(), password: newPassword, lovirtual_role: newRole, hierarchy: newHierarchy },
       });
       if (res.error || res.data?.error) {
         toast({ title: 'Error', description: res.data?.error || res.error?.message || 'Error al crear usuario', variant: 'destructive' });
