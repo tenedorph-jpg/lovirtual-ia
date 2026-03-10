@@ -92,7 +92,7 @@ Deno.serve(async (req) => {
         success: true,
         user_id: newUser.user.id,
         email,
-        temp_password: tempPassword,
+        temp_password: userPassword,
       }),
       {
         status: 200,

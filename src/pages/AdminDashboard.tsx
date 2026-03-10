@@ -462,7 +462,7 @@ const AdminDashboard: React.FC = () => {
                         </SelectContent>
                       </Select>
                     </div>
-                    <Button className="w-full lovirtual-gradient-bg text-white gap-2" onClick={handleCreateUser} disabled={!newName.trim() || !newEmail.trim() || !newRole || creating}>
+                    <Button className="w-full lovirtual-gradient-bg text-white gap-2" onClick={handleCreateUser} disabled={!newName.trim() || !newEmail.trim() || !newPassword.trim() || !newRole || creating}>
                       {creating ? <><Loader2 className="w-4 h-4 animate-spin" />Creando...</> : 'Crear Usuario'}
                     </Button>
                   </>
