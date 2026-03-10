@@ -29,6 +29,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Constants } from '@/integrations/supabase/types';
 import { cursosData, PROFILE_LABELS, type CourseData } from '@/data/mockAdminData';
+import { useAdminStudents } from '@/hooks/useAdminStudents';
 
 const chartTooltipStyle = {
   backgroundColor: 'hsl(var(--card))',
@@ -193,7 +194,7 @@ const ErrorRateTable: React.FC<{ data: CourseData['errores'] }> = ({ data }) => 
   </div>
 );
 
-const StudentTable: React.FC<{ estudiantes: CourseData['estudiantes'] }> = ({ estudiantes }) => {
+const StudentTable: React.FC<{ estudiantes: { id: string | number; nombre: string; perfil: string; progreso: number; puntuacion: string; actividad: string; certificado: string }[] }> = ({ estudiantes }) => {
   const [statusFilter, setStatusFilter] = useState('todos');
   const [profileFilter, setProfileFilter] = useState('todos');
 
@@ -319,6 +320,9 @@ const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [activeCourse, setActiveCourse] = useState('nivel1');
 
+  // Real data from Supabase
+  const realData = useAdminStudents();
+
   // Create user dialog state
   const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');
@@ -330,7 +334,15 @@ const AdminDashboard: React.FC = () => {
   const [createdInfo, setCreatedInfo] = useState<{ email: string; password: string } | null>(null);
   const [copiedPwd, setCopiedPwd] = useState(false);
 
-  const courseData = cursosData[activeCourse];
+  // For nivel1 use real data, nivel2 keep mock for now
+  const courseData = activeCourse === 'nivel1'
+    ? {
+        ...cursosData.nivel1,
+        kpis: realData.kpis,
+        distribucion: realData.distribucion,
+        estudiantes: realData.estudiantes,
+      }
+    : cursosData.nivel2;
 
   const handleLogout = () => { logout(); navigate('/'); };
 
