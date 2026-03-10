@@ -322,6 +322,7 @@ const AdminDashboard: React.FC = () => {
   // Create user dialog state
   const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [newRole, setNewRole] = useState('');
   const [newHierarchy, setNewHierarchy] = useState<'assistant' | 'admin'>('assistant');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -334,11 +335,15 @@ const AdminDashboard: React.FC = () => {
   const handleLogout = () => { logout(); navigate('/'); };
 
   const handleCreateUser = async () => {
-    if (!newName.trim() || !newEmail.trim() || !newRole) return;
+    if (!newName.trim() || !newEmail.trim() || !newPassword.trim() || !newRole) return;
+    if (newPassword.length < 6) {
+      toast({ title: 'Error', description: 'La contraseña debe tener al menos 6 caracteres', variant: 'destructive' });
+      return;
+    }
     setCreating(true);
     try {
       const res = await supabase.functions.invoke('create-user', {
-        body: { full_name: newName.trim(), email: newEmail.trim(), lovirtual_role: newRole, hierarchy: newHierarchy },
+        body: { full_name: newName.trim(), email: newEmail.trim(), password: newPassword, lovirtual_role: newRole, hierarchy: newHierarchy },
       });
       if (res.error || res.data?.error) {
         toast({ title: 'Error', description: res.data?.error || res.error?.message || 'Error al crear usuario', variant: 'destructive' });
@@ -362,7 +367,7 @@ const AdminDashboard: React.FC = () => {
   };
 
   const resetDialog = () => {
-    setNewName(''); setNewEmail(''); setNewRole(''); setNewHierarchy('assistant');
+    setNewName(''); setNewEmail(''); setNewPassword(''); setNewRole(''); setNewHierarchy('assistant');
     setCreatedInfo(null); setIsDialogOpen(false);
   };
 
@@ -429,6 +434,10 @@ const AdminDashboard: React.FC = () => {
                       <Input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="Ej: maria@empresa.com" className="mt-1" />
                     </div>
                     <div>
+                      <label className="text-sm font-medium text-foreground">Contraseña</label>
+                      <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Mínimo 6 caracteres" className="mt-1" />
+                    </div>
+                    <div>
                       <label className="text-sm font-medium text-foreground">Jerarquía</label>
                       <Select value={newHierarchy} onValueChange={(v) => setNewHierarchy(v as 'assistant' | 'admin')}>
                         <SelectTrigger className="mt-1">
@@ -453,7 +462,7 @@ const AdminDashboard: React.FC = () => {
                         </SelectContent>
                       </Select>
                     </div>
-                    <Button className="w-full lovirtual-gradient-bg text-white gap-2" onClick={handleCreateUser} disabled={!newName.trim() || !newEmail.trim() || !newRole || creating}>
+                    <Button className="w-full lovirtual-gradient-bg text-white gap-2" onClick={handleCreateUser} disabled={!newName.trim() || !newEmail.trim() || !newPassword.trim() || !newRole || creating}>
                       {creating ? <><Loader2 className="w-4 h-4 animate-spin" />Creando...</> : 'Crear Usuario'}
                     </Button>
                   </>
