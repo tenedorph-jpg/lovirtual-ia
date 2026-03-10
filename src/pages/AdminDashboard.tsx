@@ -322,6 +322,7 @@ const AdminDashboard: React.FC = () => {
   // Create user dialog state
   const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [newRole, setNewRole] = useState('');
   const [newHierarchy, setNewHierarchy] = useState<'assistant' | 'admin'>('assistant');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
