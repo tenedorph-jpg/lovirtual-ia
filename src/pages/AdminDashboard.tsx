@@ -323,6 +323,7 @@ const AdminDashboard: React.FC = () => {
   const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [newRole, setNewRole] = useState('');
+  const [newHierarchy, setNewHierarchy] = useState<'assistant' | 'admin'>('assistant');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [createdInfo, setCreatedInfo] = useState<{ email: string; password: string } | null>(null);
