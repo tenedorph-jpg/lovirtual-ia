@@ -144,7 +144,7 @@ export const level2Modules: Level2Module[] = [
     },
   },
   {
-    id: 5,
+    id: 105,
     title: "Módulo 5: Creación de Video y Avatares",
     duration: "40 min",
     status: "locked",
