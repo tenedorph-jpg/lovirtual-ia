@@ -21,9 +21,11 @@ const Level2Accordion: React.FC<Props> = ({ modules, completedModules, onModuleC
   const [quizOpen, setQuizOpen] = useState(false);
   const [activeQuizModule, setActiveQuizModule] = useState<Level2Module | null>(null);
 
-  const getStatus = (mod: Level2Module): 'completed' | 'available' | 'locked' => {
+  const getStatus = (mod: Level2Module, index: number): 'completed' | 'available' | 'locked' => {
     if (completedModules.includes(mod.id)) return 'completed';
-    if (mod.id === 1 || completedModules.includes(mod.id - 1)) return 'available';
+    if (index === 0) return 'available';
+    const prevModule = modules[index - 1];
+    if (prevModule && completedModules.includes(prevModule.id)) return 'available';
     return 'locked';
   };
 
@@ -36,8 +38,8 @@ const Level2Accordion: React.FC<Props> = ({ modules, completedModules, onModuleC
   return (
     <>
       <Accordion type="single" collapsible className="space-y-3">
-        {modules.map((mod) => {
-          const status = getStatus(mod);
+        {modules.map((mod, index) => {
+          const status = getStatus(mod, index);
           const isLocked = status === 'locked';
 
           return (

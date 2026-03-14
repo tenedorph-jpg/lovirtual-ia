@@ -55,7 +55,7 @@ export const learningPath: LearningPathLevel[] = [
 
 export const level2Modules: Level2Module[] = [
   {
-    id: 1,
+    id: 101,
     title: "Módulo 1: Prompting Avanzado",
     duration: "45 min",
     status: "unlocked",
@@ -76,7 +76,7 @@ export const level2Modules: Level2Module[] = [
     },
   },
   {
-    id: 2,
+    id: 102,
     title: "Módulo 2: Tu Propio Agente AI",
     duration: "50 min",
     status: "locked",
@@ -102,7 +102,7 @@ export const level2Modules: Level2Module[] = [
     },
   },
   {
-    id: 3,
+    id: 103,
     title: "Módulo 3: Análisis de Datos Express",
     duration: "60 min",
     status: "locked",
@@ -123,7 +123,7 @@ export const level2Modules: Level2Module[] = [
     },
   },
   {
-    id: 4,
+    id: 104,
     title: "Módulo 4: Automatización Sin Código",
     duration: "55 min",
     status: "locked",
@@ -144,7 +144,7 @@ export const level2Modules: Level2Module[] = [
     },
   },
   {
-    id: 5,
+    id: 105,
     title: "Módulo 5: Creación de Video y Avatares",
     duration: "40 min",
     status: "locked",
@@ -165,7 +165,7 @@ export const level2Modules: Level2Module[] = [
     },
   },
   {
-    id: 6,
+    id: 106,
     title: "Módulo 6: Redacción Estratégica (Copywriting)",
     duration: "45 min",
     status: "locked",
@@ -186,7 +186,7 @@ export const level2Modules: Level2Module[] = [
     },
   },
   {
-    id: 7,
+    id: 107,
     title: "Módulo 7: Gestión de Proyectos Mejorada",
     duration: "40 min",
     status: "locked",
@@ -207,7 +207,7 @@ export const level2Modules: Level2Module[] = [
     },
   },
   {
-    id: 8,
+    id: 108,
     title: "Módulo 8: Apps Script Nivel 2",
     duration: "65 min",
     status: "locked",
@@ -228,7 +228,7 @@ export const level2Modules: Level2Module[] = [
     },
   },
   {
-    id: 9,
+    id: 109,
     title: "Módulo 9: Lovable y Datos Reales",
     duration: "60 min",
     status: "locked",
@@ -249,7 +249,7 @@ export const level2Modules: Level2Module[] = [
     },
   },
   {
-    id: 10,
+    id: 110,
     title: "Módulo 10: Simulador de Casos Reales (Evaluación Final)",
     duration: "45 min",
     status: "locked",
