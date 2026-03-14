@@ -228,7 +228,7 @@ export const level2Modules: Level2Module[] = [
     },
   },
   {
-    id: 9,
+    id: 109,
     title: "Módulo 9: Lovable y Datos Reales",
     duration: "60 min",
     status: "locked",
