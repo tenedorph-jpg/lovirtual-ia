@@ -102,7 +102,7 @@ export const level2Modules: Level2Module[] = [
     },
   },
   {
-    id: 3,
+    id: 103,
     title: "Módulo 3: Análisis de Datos Express",
     duration: "60 min",
     status: "locked",
