@@ -249,7 +249,7 @@ export const level2Modules: Level2Module[] = [
     },
   },
   {
-    id: 10,
+    id: 110,
     title: "Módulo 10: Simulador de Casos Reales (Evaluación Final)",
     duration: "45 min",
     status: "locked",
