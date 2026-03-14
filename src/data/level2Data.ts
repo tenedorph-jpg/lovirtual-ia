@@ -186,7 +186,7 @@ export const level2Modules: Level2Module[] = [
     },
   },
   {
-    id: 7,
+    id: 107,
     title: "Módulo 7: Gestión de Proyectos Mejorada",
     duration: "40 min",
     status: "locked",
