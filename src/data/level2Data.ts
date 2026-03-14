@@ -165,7 +165,7 @@ export const level2Modules: Level2Module[] = [
     },
   },
   {
-    id: 6,
+    id: 106,
     title: "Módulo 6: Redacción Estratégica (Copywriting)",
     duration: "45 min",
     status: "locked",
