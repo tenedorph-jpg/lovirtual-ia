@@ -320,8 +320,8 @@ const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [activeCourse, setActiveCourse] = useState('nivel1');
 
-  // Real data from Supabase
-  const realData = useAdminStudents();
+  // Real data from Supabase, filtered by active level
+  const realData = useAdminStudents(activeCourse);
 
   // Create user dialog state
   const [newName, setNewName] = useState('');
