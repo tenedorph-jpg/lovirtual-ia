@@ -96,8 +96,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         ...data,
         quiz_scores: (data.quiz_scores as Record<string, number>) || {},
       });
+      return data;
     }
-    return data;
+    // Auto-create record if missing
+    const { data: created } = await supabase
+      .from('student_progress')
+      .insert({ user_id: userId })
+      .select()
+      .single();
+    if (created) {
+      setStudentProgress({
+        ...created,
+        quiz_scores: {},
+      });
+    }
+    return created;
   };
 
   const checkAdmin = async (userId: string) => {
@@ -236,23 +249,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setProfile(prev => prev ? { ...prev, full_name: name } : null);
   };
 
-  // Legacy compat: build currentStudent from profile + progress
-  const currentStudent: LegacyStudent | null = profile && studentProgress ? {
+  // Legacy compat: build currentStudent from profile + progress (use defaults if progress not yet loaded)
+  const currentStudent: LegacyStudent | null = profile ? {
     id: profile.user_id,
     code: '',
     name: profile.full_name,
     email: profile.email,
-    progress: studentProgress.progress,
-    averageScore: studentProgress.average_score,
-    completedModules: studentProgress.completed_modules,
+    progress: studentProgress?.progress ?? 0,
+    averageScore: studentProgress?.average_score ?? 0,
+    completedModules: studentProgress?.completed_modules ?? [],
     quizScores: Object.fromEntries(
-      Object.entries(studentProgress.quiz_scores).map(([k, v]) => [Number(k), v])
+      Object.entries(studentProgress?.quiz_scores ?? {}).map(([k, v]) => [Number(k), v])
     ),
     enrolledAt: '',
     lastActive: '',
-    timeSpentMinutes: studentProgress.time_spent_minutes,
-    certificateGenerated: studentProgress.certificate_generated,
-    finalExamScore: studentProgress.final_exam_score ?? undefined,
+    timeSpentMinutes: studentProgress?.time_spent_minutes ?? 0,
+    certificateGenerated: studentProgress?.certificate_generated ?? false,
+    finalExamScore: studentProgress?.final_exam_score ?? undefined,
   } : null;
 
   // Legacy: build students list for admin

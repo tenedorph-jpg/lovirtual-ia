@@ -14,7 +14,7 @@ const Level2Page: React.FC = () => {
   const navigate = useNavigate();
 
   if (!currentStudent) {
-    navigate('/');
+    navigate('/dashboard');
     return null;
   }
 
