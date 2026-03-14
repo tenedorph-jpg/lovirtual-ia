@@ -334,15 +334,13 @@ const AdminDashboard: React.FC = () => {
   const [createdInfo, setCreatedInfo] = useState<{ email: string; password: string } | null>(null);
   const [copiedPwd, setCopiedPwd] = useState(false);
 
-  // For nivel1 use real data, nivel2 keep mock for now
-  const courseData = activeCourse === 'nivel1'
-    ? {
-        ...cursosData.nivel1,
-        kpis: realData.kpis,
-        distribucion: realData.distribucion,
-        estudiantes: realData.estudiantes,
-      }
-    : cursosData.nivel2;
+  // Both levels now use real data filtered by level
+  const courseData = {
+    ...(activeCourse === 'nivel1' ? cursosData.nivel1 : cursosData.nivel2),
+    kpis: realData.kpis,
+    distribucion: realData.distribucion,
+    estudiantes: realData.estudiantes,
+  };
 
   const handleLogout = () => { logout(); navigate('/'); };
 
