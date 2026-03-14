@@ -76,7 +76,7 @@ export const level2Modules: Level2Module[] = [
     },
   },
   {
-    id: 2,
+    id: 102,
     title: "Módulo 2: Tu Propio Agente AI",
     duration: "50 min",
     status: "locked",
