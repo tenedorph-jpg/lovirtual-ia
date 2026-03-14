@@ -69,7 +69,7 @@ const Level2Page: React.FC = () => {
           name={currentStudent.name}
           globalLevel={2}
           totalLevels={learningPath.length}
-          progressPercentage={progressPercentage}
+          progressPercentage={level2ProgressPercentage}
           badges={completedModules.length > 0 ? ["Nivel 1 Completado"] : []}
         />
 

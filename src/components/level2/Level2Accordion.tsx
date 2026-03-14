@@ -38,8 +38,8 @@ const Level2Accordion: React.FC<Props> = ({ modules, completedModules, onModuleC
   return (
     <>
       <Accordion type="single" collapsible className="space-y-3">
-        {modules.map((mod) => {
-          const status = getStatus(mod);
+        {modules.map((mod, index) => {
+          const status = getStatus(mod, index);
           const isLocked = status === 'locked';
 
           return (
