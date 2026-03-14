@@ -191,11 +191,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const updateStudentProgress = async (moduleId: number, score: number) => {
     if (!user || !studentProgress) return;
     const newQuizScores: Record<string, number> = { ...studentProgress.quiz_scores, [moduleId]: score };
-    const completedCount = Object.keys(newQuizScores).length;
-    const vals = Object.values(newQuizScores) as number[];
-    const totalScore = vals.reduce((a, b) => a + b, 0);
-    const avgScore = Math.round(totalScore / completedCount);
-    const progress = Math.round((completedCount / 10) * 100);
+
+    // Calculate progress PER LEVEL based on module ID ranges
+    // Level 1: modules 1-10, Level 2: modules 101-110
+    const level1Ids = Object.keys(newQuizScores).filter(k => Number(k) >= 1 && Number(k) <= 10);
+    const level2Ids = Object.keys(newQuizScores).filter(k => Number(k) >= 101 && Number(k) <= 110);
+
+    // Average score across ALL quizzes
+    const allVals = Object.values(newQuizScores) as number[];
+    const avgScore = allVals.length > 0 ? Math.round(allVals.reduce((a, b) => a + b, 0) / allVals.length) : 0;
+
+    // Progress = max of both levels (or combined logic — here we use the level of the current module)
+    const isLevel2Module = moduleId >= 101 && moduleId <= 110;
+    const relevantCount = isLevel2Module ? level2Ids.length : level1Ids.length;
+    const totalModulesInLevel = 10;
+    const progress = Math.min(Math.round((relevantCount / totalModulesInLevel) * 100), 99);
+    // NOTE: progress is capped at 99% — only the final exam sets it to 100%
 
     await supabase
       .from('student_progress')
