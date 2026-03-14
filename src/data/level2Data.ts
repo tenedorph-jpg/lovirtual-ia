@@ -55,7 +55,7 @@ export const learningPath: LearningPathLevel[] = [
 
 export const level2Modules: Level2Module[] = [
   {
-    id: 1,
+    id: 101,
     title: "Módulo 1: Prompting Avanzado",
     duration: "45 min",
     status: "unlocked",
