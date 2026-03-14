@@ -19,9 +19,10 @@ const Level2Page: React.FC = () => {
   }
 
   const completedModules = studentProgress?.completed_modules ?? [];
-  const progressPercentage = studentProgress?.progress ?? 0;
   const totalLevel2Modules = level2Modules.length;
-  const completedLevel2Count = level2Modules.filter(m => completedModules.includes(m.id)).length;
+  const level2ModuleIds = new Set(level2Modules.map(m => m.id));
+  const completedLevel2Count = completedModules.filter(id => level2ModuleIds.has(id)).length;
+  const level2ProgressPercentage = Math.round((completedLevel2Count / totalLevel2Modules) * 100);
   const allLevel2Completed = completedLevel2Count === totalLevel2Modules;
 
   const handleLogout = () => {
