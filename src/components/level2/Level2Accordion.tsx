@@ -98,7 +98,10 @@ const Level2Accordion: React.FC<Props> = ({ modules, completedModules, onModuleC
                     </p>
                   </div>
                 ) : mod.type === 'evaluation' && mod.evaluationData ? (
-                  <AIEvaluationSimulator data={mod.evaluationData} />
+                  <AIEvaluationSimulator
+                    data={mod.evaluationData}
+                    onComplete={(score) => onModuleComplete?.(mod.id, score)}
+                  />
                 ) : (
                   <div className="space-y-6">
                     {/* Temario */}

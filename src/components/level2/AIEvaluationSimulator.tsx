@@ -6,9 +6,10 @@ import type { EvaluationData } from '@/data/level2Data';
 
 interface Props {
   data: EvaluationData;
+  onComplete?: (score: number) => void;
 }
 
-const AIEvaluationSimulator: React.FC<Props> = ({ data }) => {
+const AIEvaluationSimulator: React.FC<Props> = ({ data, onComplete }) => {
   const [response, setResponse] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<EvaluationData['simulatedFeedback'] | null>(null);
@@ -97,15 +98,26 @@ const AIEvaluationSimulator: React.FC<Props> = ({ data }) => {
             <p className="text-sm text-foreground">{result.improvements}</p>
           </div>
 
-          <Button
-            variant="outline"
-            onClick={() => {
-              setResult(null);
-              setResponse('');
-            }}
-          >
-            Intentar de nuevo
-          </Button>
+          <div className="flex gap-3 flex-wrap">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setResult(null);
+                setResponse('');
+              }}
+            >
+              Intentar de nuevo
+            </Button>
+            {onComplete && (
+              <Button
+                className="lovirtual-gradient-bg text-white gap-2"
+                onClick={() => onComplete(result.score)}
+              >
+                <CheckCircle className="w-4 h-4" />
+                Completar Módulo
+              </Button>
+            )}
+          </div>
         </div>
       )}
     </div>

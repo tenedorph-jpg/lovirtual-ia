@@ -175,7 +175,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) return { success: false, message: 'Credenciales inválidas' };
+    if (error) {
+      if (error.message.toLowerCase().includes('email not confirmed')) {
+        return { success: false, message: 'Debes confirmar tu correo electrónico antes de ingresar. Revisa tu bandeja de entrada.' };
+      }
+      return { success: false, message: 'Correo o contraseña incorrectos. Verifica tus datos e intenta nuevamente.' };
+    }
     return { success: true, message: '¡Bienvenido/a!' };
   };
 
