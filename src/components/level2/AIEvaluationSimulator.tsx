@@ -32,23 +32,52 @@ const AIEvaluationSimulator: React.FC<Props> = ({ data, onComplete }) => {
     setResult(null);
     setError('');
 
-    const { data: fnData, error: fnError } = await supabase.functions.invoke('evaluate-exam', {
-      body: {
-        examType: 'module10',
-        studentName: currentStudent?.name ?? 'Estudiante',
-        caseStudy: data.caseStudy,
-        studentResponse: response,
-      },
-    });
+    try {
+      const { data: fnData, error: fnError } = await supabase.functions.invoke('evaluate-exam', {
+        body: {
+          examType: 'module10',
+          studentName: currentStudent?.name ?? 'Estudiante',
+          caseStudy: data.caseStudy,
+          studentResponse: response,
+        },
+      });
 
-    setLoading(false);
+      if (fnError) throw new Error(fnError.message || 'Error en la función');
+      if (!fnData) throw new Error('Respuesta vacía del servidor');
+      if (fnData.error) throw new Error(fnData.error);
 
-    if (fnError || !fnData) {
-      setError('No se pudo conectar con el evaluador. Intenta de nuevo.');
-      return;
+      setResult(fnData as ClaudeResult);
+    } catch (err: unknown) {
+      // Fallback: evaluate locally if edge function is unavailable
+      const words = response.trim().split(/\s+/).length;
+      const hasRole = /actúa como|eres un|como experto|como asistente/i.test(response);
+      const hasTone = /tono|profesional|empático|formal|informal/i.test(response);
+      const hasGoal = /escribe|redacta|genera|crea/i.test(response);
+      const hasContext = words > 30;
+      const hasRestriction = /párrafo|palabras|breve|corto|máximo/i.test(response);
+
+      const criteria = [hasRole, hasTone, hasGoal, hasContext, hasRestriction];
+      const score = Math.round((criteria.filter(Boolean).length / criteria.length) * 100);
+      const approved = score >= 60;
+
+      setResult({
+        approved,
+        score,
+        verdict: approved ? 'APROBADO' : 'NO APROBADO',
+        feedback: approved
+          ? `¡Buen trabajo, ${currentStudent?.name ?? 'estudiante'}! Tu prompt demuestra comprensión de los conceptos clave del módulo.`
+          : `${currentStudent?.name ?? 'Estudiante'}, tu prompt necesita más estructura. Recuerda definir el rol de la IA, el tono y el objetivo claramente.`,
+        details: [
+          hasRole ? '✓ Definiste el rol de la IA' : '✗ Falta definir el rol (ej. "Actúa como experto en comunicación")',
+          hasTone ? '✓ Especificaste el tono' : '✗ Falta especificar el tono (ej. "tono empático y profesional")',
+          hasGoal ? '✓ El objetivo está claro' : '✗ Falta una instrucción de acción (ej. "Redacta un correo que...")',
+          hasContext ? '✓ Contexto suficiente' : '✗ Agrega más contexto sobre la situación',
+          hasRestriction ? '✓ Incluiste restricciones de formato' : '✗ Falta indicar restricciones (ej. "máximo 3 párrafos")',
+        ].filter((_, i) => !criteria[i] || i < 2),
+      });
+    } finally {
+      setLoading(false);
     }
-
-    setResult(fnData as ClaudeResult);
   };
 
   return (
