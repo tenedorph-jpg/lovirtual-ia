@@ -269,7 +269,7 @@ const Level2CertificateView: React.FC<{
   const certId = `CERT-N2-${Date.now()}-${Math.floor(Math.random() * 100)}`;
   const courseName = 'Nivel 2: Implementación y Automatización con IA';
 
-  const generatePDF = () => generateCertificatePDF(studentName, score);
+  const generatePDF = () => generateCertificatePDF(studentName, score, 'level2');
 
   const handleWhatsApp = () => {
     const message = encodeURIComponent(
