@@ -48,13 +48,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ moduleId, acceptedFormats, onUp
       toast({ title: 'Archivo muy grande', description: 'El límite es 100MB.', variant: 'destructive' });
       return;
     }
-
-    const ext = file.name.split('.').pop()?.toLowerCase() || '';
-    const allowed = acceptedFormats.split(',').map(f => f.trim().replace('.', ''));
-    if (!allowed.includes(ext)) {
-      toast({ title: 'Formato no permitido', description: `Formatos aceptados: ${acceptedFormats}`, variant: 'destructive' });
-      return;
-    }
+    // Accept all file types — no format restriction
 
     setUploading(true);
     try {
@@ -247,7 +241,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ moduleId, acceptedFormats, onUp
           <Upload className="w-10 h-10 text-muted-foreground" />
           <div>
             <p className="font-medium text-foreground">Arrastra tu archivo aquí o haz clic para seleccionar</p>
-            <p className="text-sm text-muted-foreground mt-1">Formatos: {acceptedFormats} · Máx: 100MB</p>
+            <p className="text-sm text-muted-foreground mt-1">Cualquier tipo de archivo · Máx: 100MB</p>
           </div>
           <Button variant="outline" onClick={() => inputRef.current?.click()} className="mt-2">
             Seleccionar archivo
@@ -257,7 +251,6 @@ const FileUpload: React.FC<FileUploadProps> = ({ moduleId, acceptedFormats, onUp
       <input
         ref={inputRef}
         type="file"
-        accept={acceptedFormats}
         className="hidden"
         onChange={(e) => {
           const file = e.target.files?.[0];
