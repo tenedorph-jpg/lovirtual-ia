@@ -14,6 +14,7 @@ import FinalExamPage from "@/pages/FinalExamPage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import Level2Page from "@/pages/Level2Page";
 import Level2FinalExamPage from "@/pages/Level2FinalExamPage";
+import Level3Page from "@/pages/Level3Page";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
