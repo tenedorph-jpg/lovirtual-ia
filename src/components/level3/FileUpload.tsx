@@ -241,7 +241,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ moduleId, acceptedFormats, onUp
           <Upload className="w-10 h-10 text-muted-foreground" />
           <div>
             <p className="font-medium text-foreground">Arrastra tu archivo aquí o haz clic para seleccionar</p>
-            <p className="text-sm text-muted-foreground mt-1">Formatos: {acceptedFormats} · Máx: 100MB</p>
+            <p className="text-sm text-muted-foreground mt-1">Cualquier tipo de archivo · Máx: 100MB</p>
           </div>
           <Button variant="outline" onClick={() => inputRef.current?.click()} className="mt-2">
             Seleccionar archivo
