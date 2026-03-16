@@ -2,6 +2,12 @@ import { jsPDF } from 'jspdf';
 
 const COURSE_NAME = 'Inteligencia Artificial y Herramientas Digitales: De Usuario a Creador';
 
+const LEVEL_INFO: Record<string, { title: string; subtitle: string; scoreLabel: string }> = {
+  level1: { title: 'CERTIFICADO', subtitle: 'D E   F I N A L I Z A C I Ó N', scoreLabel: 'Calificación obtenida' },
+  level2: { title: 'CERTIFICADO', subtitle: 'D E   F I N A L I Z A C I Ó N', scoreLabel: 'Calificación obtenida' },
+  level3: { title: 'CERTIFICADO', subtitle: 'N I V E L   3  —  D O M I N I O   P R Á C T I C O', scoreLabel: 'Calificación Final (suma de 10 módulos)' },
+};
+
 function drawCornerDiamond(pdf: any, x: number, y: number, size: number) {
   pdf.setFillColor(184, 152, 61);
   pdf.lines([[size, -size], [size, size], [-size, size], [-size, -size]], x, y, [1, 1], 'F', true);
@@ -22,7 +28,7 @@ const imgToDataUrl = (src: string): Promise<string> =>
     img.src = src;
   });
 
-export async function generateCertificatePDF(studentName: string, score: number): Promise<void> {
+export async function generateCertificatePDF(studentName: string, score: number, level: string = 'level1'): Promise<void> {
   const [firmaDataUrl, selloDataUrl] = await Promise.all([
     imgToDataUrl('/firma.png'),
     imgToDataUrl('/sello.jpeg'),
@@ -79,15 +85,17 @@ export async function generateCertificatePDF(studentName: string, score: number)
   pdf.text('A C A D E M I A   L O V I R T U A L', w / 2, 27.5, { align: 'center', baseline: 'bottom' });
 
   // ── Main title ─────────────────────────────────────────────────────────────
+  const info = LEVEL_INFO[level] || LEVEL_INFO.level1;
+
   (pdf as any).setFont('times', 'bold');
   pdf.setFontSize(46);
   pdf.setTextColor(1, 80, 125);
-  pdf.text('CERTIFICADO', w / 2, 48, { align: 'center' });
+  pdf.text(info.title, w / 2, 48, { align: 'center' });
 
   (pdf as any).setFont('helvetica', 'normal');
   pdf.setFontSize(13);
   pdf.setTextColor(100, 100, 100);
-  pdf.text('D E   F I N A L I Z A C I Ó N', w / 2, 57, { align: 'center' });
+  pdf.text(info.subtitle, w / 2, 57, { align: 'center' });
 
   pdf.setDrawColor(184, 152, 61);
   (pdf as any).setLineWidth(0.6);
@@ -135,10 +143,10 @@ export async function generateCertificatePDF(studentName: string, score: number)
   (pdf as any).setFont('helvetica', 'normal');
   pdf.setFontSize(9);
   pdf.setTextColor(130, 130, 130);
-  pdf.text('Calificación obtenida: ', w / 2 - 8, 127, { align: 'right' });
+  pdf.text(`${info.scoreLabel}: `, w / 2 - 8, 127, { align: 'right' });
   (pdf as any).setFont('helvetica', 'bold');
   pdf.setTextColor(201, 162, 39);
-  pdf.text(`${score}%`, w / 2 - 7, 127, { align: 'left' });
+  pdf.text(`${score}/100`, w / 2 - 7, 127, { align: 'left' });
 
   pdf.setDrawColor(200, 200, 200);
   (pdf as any).setLineWidth(0.3);

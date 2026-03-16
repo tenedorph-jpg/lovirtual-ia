@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { courseModules } from '@/data/courseModules';
+import { generateCertificatePDF } from '@/lib/generateCertificate';
+import { toast } from '@/hooks/use-toast';
 import BadgesDisplay from '@/components/BadgesDisplay';
 import {
   LogOut,
@@ -19,12 +22,34 @@ import ThemeToggle from '@/components/ThemeToggle';
 import CourseAccordion from '@/components/CourseAccordion';
 
 const StudentDashboard: React.FC = () => {
-  const { currentStudent, logout } = useAuth();
+  const { currentStudent, logout, user, studentProgress, markCertificateGenerated } = useAuth();
   const navigate = useNavigate();
 
   const [level1Open, setLevel1Open] = useState(false);
   const [level2Open, setLevel2Open] = useState(false);
   const [level3Open, setLevel3Open] = useState(false);
+  const [level3CertReady, setLevel3CertReady] = useState<{ totalScore: number } | null>(null);
+
+  // Check if Level 3 certificate is available
+  const checkLevel3Cert = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('assignments')
+      .select('module_id, grade, status')
+      .eq('user_id', user.id)
+      .gte('module_id', 201)
+      .lte('module_id', 210)
+      .eq('status', 'graded');
+    if (data && data.length === 10) {
+      const allPassed = data.every(a => (a.grade || 0) >= 7);
+      if (allPassed) {
+        const totalScore = data.reduce((s, a) => s + (a.grade || 0), 0);
+        setLevel3CertReady({ totalScore });
+      }
+    }
+  }, [user]);
+
+  useEffect(() => { checkLevel3Cert(); }, [checkLevel3Cert]);
 
   if (!currentStudent) {
     navigate('/');
@@ -268,12 +293,44 @@ const StudentDashboard: React.FC = () => {
             <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform duration-200 ${level3Open ? 'rotate-180' : ''}`} />
           </button>
           {level3Open && (
-            <div className="mt-3 lovirtual-card flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <p className="text-muted-foreground text-sm">Sube tus proyectos prácticos y demuestra tu dominio de herramientas de IA.</p>
-              <Button onClick={() => navigate('/level-3')} className="lovirtual-gradient-bg text-white gap-2 flex-shrink-0">
-                <Sparkles className="w-4 h-4" />
-                Ver Entregables
-              </Button>
+            <div className="mt-3 space-y-3">
+              <div className="lovirtual-card flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <p className="text-muted-foreground text-sm">Sube tus proyectos prácticos y demuestra tu dominio de herramientas de IA.</p>
+                <Button onClick={() => navigate('/level-3')} className="lovirtual-gradient-bg text-white gap-2 flex-shrink-0">
+                  <Sparkles className="w-4 h-4" />
+                  Ver Entregables
+                </Button>
+              </div>
+              {level3CertReady && (
+                <div className="lovirtual-card border-2 border-success/40 bg-success/5">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="p-4 rounded-xl bg-success/10">
+                        <Award className="w-8 h-8 text-success" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold text-foreground">🎓 Certificado Nivel 3 Disponible</h3>
+                        <p className="text-muted-foreground">
+                          Calificación Final: <span className="font-bold text-success">{level3CertReady.totalScore}/100</span>
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      size="lg"
+                      className="lovirtual-gradient-bg text-white gap-2"
+                      onClick={async () => {
+                        const name = currentStudent?.name || 'Estudiante';
+                        await generateCertificatePDF(name, level3CertReady.totalScore, 'level3');
+                        await markCertificateGenerated();
+                        toast({ title: '📄 Certificado generado', description: 'El PDF se ha descargado.' });
+                      }}
+                    >
+                      <Award className="w-5 h-5" />
+                      Descargar Certificado
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

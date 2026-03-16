@@ -12,7 +12,7 @@ import { toast } from '@/hooks/use-toast';
 const Level3Accordion: React.FC = () => {
   const { user, studentProgress, completeModule, markCertificateGenerated } = useAuth();
   const [assignments, setAssignments] = useState<Record<number, { id: string; file_name: string; file_path: string; status: string; grade: number | null; feedback: string | null }>>({});
-  const [showCertificate, setShowCertificate] = useState<{ avg: number } | null>(null);
+  const [showCertificate, setShowCertificate] = useState<{ totalScore: number; avg: number } | null>(null);
 
   const completedModules = studentProgress?.completed_modules ?? [];
 
@@ -35,9 +35,11 @@ const Level3Accordion: React.FC = () => {
       // Check certificate eligibility
       const graded = data.filter(a => a.status === 'graded' && a.grade != null);
       if (graded.length === 10) {
-        const avg = Math.round((graded.reduce((s, a) => s + (a.grade || 0), 0) / 10) * 10) / 10;
-        if (avg >= 7) {
-          setShowCertificate({ avg });
+        const allPassed = graded.every(a => (a.grade || 0) >= 7);
+        if (allPassed) {
+          const totalScore = graded.reduce((s, a) => s + (a.grade || 0), 0);
+          const avg = Math.round((totalScore / 10) * 10) / 10;
+          setShowCertificate({ totalScore, avg });
         }
       }
     }
@@ -63,20 +65,20 @@ const Level3Accordion: React.FC = () => {
     await completeModule(moduleId);
     await fetchAssignments();
 
-    if (result?.certificateEligible && result.averageGrade) {
-      setShowCertificate({ avg: result.averageGrade });
+    if (result?.certificateEligible && result.totalScore) {
+      setShowCertificate({ totalScore: result.totalScore, avg: result.averageGrade || result.totalScore / 10 });
       toast({
         title: '🎓 ¡Felicitaciones!',
-        description: `Has completado el Nivel 3 con un promedio de ${result.averageGrade}/10. ¡Tu certificado está listo!`,
+        description: `Has completado el Nivel 3 con una calificación de ${result.totalScore}/100. ¡Tu certificado está listo!`,
       });
     }
   };
 
   const handleGenerateCertificate = async () => {
     if (!showCertificate || !user) return;
-    const profile = await supabase.from('profiles').select('full_name').eq('user_id', user.id).single();
-    const name = profile.data?.full_name || 'Estudiante';
-    await generateCertificatePDF(name, showCertificate.avg * 10); // Convert to percentage
+    const profileData = await supabase.from('profiles').select('full_name').eq('user_id', user.id).single();
+    const name = profileData.data?.full_name || 'Estudiante';
+    await generateCertificatePDF(name, showCertificate.totalScore, 'level3');
     await markCertificateGenerated();
     toast({ title: '📄 Certificado generado', description: 'El PDF se ha descargado.' });
   };
@@ -88,13 +90,17 @@ const Level3Accordion: React.FC = () => {
           <div className="flex items-center gap-3 mb-3">
             <Award className="w-8 h-8 text-success" />
             <div>
-              <h3 className="text-lg font-bold text-foreground">🎓 ¡Nivel 3 Completado!</h3>
+              <h3 className="text-lg font-bold text-foreground">🎓 ¡Felicidades! Nivel 3 Completado</h3>
               <p className="text-sm text-muted-foreground">
-                Promedio final: <span className="font-bold text-success">{showCertificate.avg}/10</span>
+                Calificación Final: <span className="font-bold text-success text-lg">{showCertificate.totalScore}/100</span>
+                <span className="ml-2 text-xs">(Promedio: {showCertificate.avg}/10)</span>
               </p>
             </div>
           </div>
-          <Button onClick={handleGenerateCertificate} className="gap-2">
+          <p className="text-sm text-muted-foreground mb-4">
+            Has completado todos los módulos del Nivel 3: Dominio Práctico con una calificación aprobatoria. ¡Descarga tu certificado!
+          </p>
+          <Button onClick={handleGenerateCertificate} className="gap-2 lovirtual-gradient-bg text-white">
             <Award className="w-4 h-4" />
             Descargar Certificado Nivel 3
           </Button>
