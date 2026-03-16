@@ -76,9 +76,9 @@ const Level3Accordion: React.FC = () => {
 
   const handleGenerateCertificate = async () => {
     if (!showCertificate || !user) return;
-    const profile = await supabase.from('profiles').select('full_name').eq('user_id', user.id).single();
-    const name = profile.data?.full_name || 'Estudiante';
-    await generateCertificatePDF(name, showCertificate.avg * 10); // Convert to percentage
+    const profileData = await supabase.from('profiles').select('full_name').eq('user_id', user.id).single();
+    const name = profileData.data?.full_name || 'Estudiante';
+    await generateCertificatePDF(name, showCertificate.totalScore, 'level3');
     await markCertificateGenerated();
     toast({ title: '📄 Certificado generado', description: 'El PDF se ha descargado.' });
   };
