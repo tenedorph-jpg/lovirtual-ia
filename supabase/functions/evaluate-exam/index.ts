@@ -92,24 +92,28 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto extra):
       }).join("\n\n");
 
       rawScore = Math.round((correctCount / qs.length) * 100);
-      const examName = "Examen Final del curso de Inteligencia Artificial y Herramientas Digitales";
+      const examName = moduleTitle
+        ? `Quiz del módulo "${moduleTitle}"`
+        : "Examen Final del curso de Inteligencia Artificial y Herramientas Digitales";
 
       prompt = `Eres el evaluador académico de la Academia LoVirtual, especializada en formación de IA para profesionales latinoamericanos.
 
 Debes revisar el siguiente ${examName} completado por ${studentName}.
 
+CONTEXTO IMPORTANTE: Estas son preguntas de opción múltiple sobre conceptos teóricos. Las preguntas pueden mencionar herramientas como imágenes, PDFs, audios o archivos, pero tú solo estás evaluando si el estudiante eligió la respuesta correcta. NO menciones que no puedes leer archivos ni imágenes — eso no aplica aquí. Solo evalúa las respuestas seleccionadas.
+
 RESULTADOS:
 ${questionsSummary}
 
-Puntaje bruto: ${correctCount}/${qs.length} (${rawScore}%)
+Puntaje: ${correctCount}/${qs.length} (${rawScore}%)
 Umbral de aprobación: 70%
 
 INSTRUCCIONES:
 1. Analiza las respuestas incorrectas para entender qué conceptos el estudiante no dominó
-2. Considera si el puntaje refleja la comprensión real del material
-3. Emite tu veredicto: APROBADO o NO APROBADO (basado en el 70% mínimo)
-4. Da un feedback personalizado y motivador en español, máximo 3 oraciones
-5. Lista 1-3 áreas de mejora si no aprobó, o 1-2 fortalezas si aprobó
+2. Emite tu veredicto: APROBADO o NO APROBADO (basado en el 70% mínimo)
+3. Da un feedback personalizado y motivador en español, máximo 3 oraciones
+4. Lista 1-2 áreas de mejora si no aprobó, o 1-2 fortalezas si aprobó
+5. NUNCA menciones limitaciones de archivos, imágenes o PDFs en tu respuesta
 
 Responde ÚNICAMENTE con este JSON (sin markdown, sin texto extra):
 {
