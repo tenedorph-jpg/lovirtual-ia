@@ -30,6 +30,7 @@ import { toast } from '@/hooks/use-toast';
 import { Constants } from '@/integrations/supabase/types';
 import { cursosData, PROFILE_LABELS, type CourseData } from '@/data/mockAdminData';
 import { useAdminStudents } from '@/hooks/useAdminStudents';
+import AssignmentsPanel from '@/components/admin/AssignmentsPanel';
 
 const chartTooltipStyle = {
   backgroundColor: 'hsl(var(--card))',
@@ -320,8 +321,8 @@ const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [activeCourse, setActiveCourse] = useState('nivel1');
 
-  // Real data from Supabase
-  const realData = useAdminStudents();
+  // Real data from Supabase, filtered by active level
+  const realData = useAdminStudents(activeCourse);
 
   // Create user dialog state
   const [newName, setNewName] = useState('');
@@ -334,15 +335,17 @@ const AdminDashboard: React.FC = () => {
   const [createdInfo, setCreatedInfo] = useState<{ email: string; password: string } | null>(null);
   const [copiedPwd, setCopiedPwd] = useState(false);
 
-  // For nivel1 use real data, nivel2 keep mock for now
-  const courseData = activeCourse === 'nivel1'
-    ? {
-        ...cursosData.nivel1,
-        kpis: realData.kpis,
-        distribucion: realData.distribucion,
-        estudiantes: realData.estudiantes,
-      }
-    : cursosData.nivel2;
+  // Merge real data with mock fallbacks
+  const mockFallback = activeCourse === 'nivel1' ? cursosData.nivel1 : activeCourse === 'nivel2' ? cursosData.nivel2 : cursosData.nivel2;
+  const courseData = {
+    ...mockFallback,
+    kpis: realData.kpis,
+    distribucion: realData.distribucion,
+    estudiantes: realData.estudiantes,
+    tiempoPromedio: realData.tiempoPromedio.length > 0 ? realData.tiempoPromedio : mockFallback.tiempoPromedio,
+    puntuacionPromedio: realData.puntuacionPromedio.length > 0 ? realData.puntuacionPromedio : mockFallback.puntuacionPromedio,
+    errores: realData.errores.length > 0 ? realData.errores : mockFallback.errores,
+  };
 
   const handleLogout = () => { logout(); navigate('/'); };
 
@@ -409,14 +412,18 @@ const AdminDashboard: React.FC = () => {
       <main className="container mx-auto px-4 py-8">
         {/* Course Tabs */}
         <Tabs value={activeCourse} onValueChange={setActiveCourse} className="mb-8">
-          <TabsList className="grid w-full max-w-lg grid-cols-2 mx-auto">
+          <TabsList className="grid w-full max-w-2xl grid-cols-3 mx-auto">
             <TabsTrigger value="nivel1" className="gap-2 text-sm">
               <BookOpen className="w-4 h-4" />
-              Nivel 1: Fundamentos de IA
+              Nivel 1: Fundamentos
             </TabsTrigger>
             <TabsTrigger value="nivel2" className="gap-2 text-sm">
               <BookOpen className="w-4 h-4" />
               Nivel 2: Implementación
+            </TabsTrigger>
+            <TabsTrigger value="nivel3" className="gap-2 text-sm">
+              <BookOpen className="w-4 h-4" />
+              Nivel 3: Portafolio
             </TabsTrigger>
           </TabsList>
         </Tabs>
@@ -516,6 +523,13 @@ const AdminDashboard: React.FC = () => {
 
         {/* Student Table */}
         <StudentTable estudiantes={courseData.estudiantes} />
+
+        {/* Assignments Evaluation Panel (only for Level 3) */}
+        {activeCourse === 'nivel3' && (
+          <div className="mt-8">
+            <AssignmentsPanel />
+          </div>
+        )}
       </main>
     </div>
   );

@@ -48,7 +48,7 @@ export const studentInfo: StudentInfo = {
 export const learningPath: LearningPathLevel[] = [
   { level: 1, title: "Fundamentos de IA", status: "completed" },
   { level: 2, title: "Implementación y Automatización", status: "unlocked" },
-  { level: 3, title: "Sistemas AI Avanzados", status: "locked" },
+  { level: 3, title: "Dominio Práctico y Entregables con IA", status: "locked" },
   { level: 4, title: "Optimización y Escala", status: "locked" },
   { level: 5, title: "Especialista LoVirtual", status: "locked" },
 ];
