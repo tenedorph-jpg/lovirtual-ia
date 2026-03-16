@@ -8,7 +8,7 @@ import { level3Modules } from '@/data/level3Data';
 
 const Level3Accordion: React.FC = () => {
   const { user, studentProgress, completeModule } = useAuth();
-  const [assignments, setAssignments] = useState<Record<number, { file_name: string; status: string }>>({});
+  const [assignments, setAssignments] = useState<Record<number, { id: string; file_name: string; file_path: string; status: string }>>({});
 
   const completedModules = studentProgress?.completed_modules ?? [];
 
