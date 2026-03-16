@@ -35,9 +35,11 @@ const Level3Accordion: React.FC = () => {
       // Check certificate eligibility
       const graded = data.filter(a => a.status === 'graded' && a.grade != null);
       if (graded.length === 10) {
-        const avg = Math.round((graded.reduce((s, a) => s + (a.grade || 0), 0) / 10) * 10) / 10;
-        if (avg >= 7) {
-          setShowCertificate({ avg });
+        const allPassed = graded.every(a => (a.grade || 0) >= 7);
+        if (allPassed) {
+          const totalScore = graded.reduce((s, a) => s + (a.grade || 0), 0);
+          const avg = Math.round((totalScore / 10) * 10) / 10;
+          setShowCertificate({ totalScore, avg });
         }
       }
     }
