@@ -230,11 +230,11 @@ const StudentDashboard: React.FC = () => {
                   </div>
                   <Button
                     size="lg"
-                    disabled={!allModulesCompleted}
+                    disabled={!allLevel1ModulesCompleted}
                     onClick={() => navigate('/final-exam')}
-                    className={allModulesCompleted ? 'lovirtual-gradient-bg text-white animate-pulse-glow' : ''}
+                    className={allLevel1ModulesCompleted ? 'lovirtual-gradient-bg text-white animate-pulse-glow' : ''}
                   >
-                    {allModulesCompleted ? (
+                    {allLevel1ModulesCompleted ? (
                       currentStudent.certificateGenerated ? (
                         <>
                           <Award className="w-5 h-5 mr-2" />
@@ -249,7 +249,7 @@ const StudentDashboard: React.FC = () => {
                     ) : (
                       <>
                         <Lock className="w-5 h-5 mr-2" />
-                        {completedModules}/{totalModules} Módulos
+                        {level1CompletedCount}/{totalModules} Módulos
                       </>
                     )}
                   </Button>
