@@ -148,7 +148,7 @@ const StudentDashboard: React.FC = () => {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Módulos Completados</p>
-                <p className="text-2xl font-bold text-foreground">{completedModules}/{totalModules}</p>
+                <p className="text-2xl font-bold text-foreground">{completedModulesTotal}/{totalModules}</p>
               </div>
             </div>
           </div>
