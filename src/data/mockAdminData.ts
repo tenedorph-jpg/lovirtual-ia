@@ -70,4 +70,12 @@ export const cursosData: Record<string, CourseData> = {
     errores: [],
     estudiantes: [],
   },
+  nivel3: {
+    kpis: { inscritos: 0, finalizados: 0, tasa: "0%", pendientes: 0 },
+    distribucion: [],
+    tiempoPromedio: [],
+    puntuacionPromedio: [],
+    errores: [],
+    estudiantes: [],
+  },
 };

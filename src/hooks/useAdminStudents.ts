@@ -10,6 +10,7 @@ const COLORS = [
 const LEVEL_MODULE_RANGES: Record<string, { min: number; max: number; total: number }> = {
   nivel1: { min: 1, max: 10, total: 10 },
   nivel2: { min: 101, max: 110, total: 10 },
+  nivel3: { min: 201, max: 210, total: 10 },
 };
 
 export interface RealStudent {
