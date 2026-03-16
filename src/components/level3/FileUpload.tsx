@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
-import { Upload, FileCheck, Loader2, Trash2 } from 'lucide-react';
+import { Upload, FileCheck, Loader2, Trash2, CheckCircle, MessageSquare } from 'lucide-react';
 
 interface FileUploadProps {
   moduleId: number;
