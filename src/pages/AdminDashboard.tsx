@@ -519,6 +519,13 @@ const AdminDashboard: React.FC = () => {
 
         {/* Student Table */}
         <StudentTable estudiantes={courseData.estudiantes} />
+
+        {/* Assignments Evaluation Panel (only for Level 3) */}
+        {activeCourse === 'nivel3' && (
+          <div className="mt-8">
+            <AssignmentsPanel />
+          </div>
+        )}
       </main>
     </div>
   );
