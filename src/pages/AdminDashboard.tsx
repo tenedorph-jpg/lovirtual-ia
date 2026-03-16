@@ -30,6 +30,7 @@ import { toast } from '@/hooks/use-toast';
 import { Constants } from '@/integrations/supabase/types';
 import { cursosData, PROFILE_LABELS, type CourseData } from '@/data/mockAdminData';
 import { useAdminStudents } from '@/hooks/useAdminStudents';
+import AssignmentsPanel from '@/components/admin/AssignmentsPanel';
 
 const chartTooltipStyle = {
   backgroundColor: 'hsl(var(--card))',
