@@ -48,13 +48,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ moduleId, acceptedFormats, onUp
       toast({ title: 'Archivo muy grande', description: 'El límite es 100MB.', variant: 'destructive' });
       return;
     }
-
-    const ext = file.name.split('.').pop()?.toLowerCase() || '';
-    const allowed = acceptedFormats.split(',').map(f => f.trim().replace('.', ''));
-    if (!allowed.includes(ext)) {
-      toast({ title: 'Formato no permitido', description: `Formatos aceptados: ${acceptedFormats}`, variant: 'destructive' });
-      return;
-    }
+    // Accept all file types — no format restriction
 
     setUploading(true);
     try {
