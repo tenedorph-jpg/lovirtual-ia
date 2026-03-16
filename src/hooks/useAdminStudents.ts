@@ -26,6 +26,9 @@ export interface RealStudent {
 export interface RealCourseData {
   kpis: { inscritos: number; finalizados: number; tasa: string; pendientes: number };
   distribucion: { perfil: string; cantidad: number; fill: string }[];
+  tiempoPromedio: { perfil: string; horas: number }[];
+  puntuacionPromedio: { perfil: string; puntuacion: number }[];
+  errores: { perfil: string; tasa: string }[];
   estudiantes: RealStudent[];
   loading: boolean;
 }
