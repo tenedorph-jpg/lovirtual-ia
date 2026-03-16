@@ -5,6 +5,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { courseModules } from '@/data/courseModules';
+import { generateCertificatePDF } from '@/lib/generateCertificate';
+import { toast } from '@/hooks/use-toast';
 import BadgesDisplay from '@/components/BadgesDisplay';
 import {
   LogOut,
