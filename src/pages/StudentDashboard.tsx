@@ -61,12 +61,15 @@ const StudentDashboard: React.FC = () => {
     navigate('/');
   };
 
-  const completedModules = currentStudent.completedModules.length;
+  const completedModulesTotal = currentStudent.completedModules.length;
   const totalModules = courseModules.length;
-  const allModulesCompleted = completedModules === totalModules;
+  
+  // Level 1 specific: count only modules 1-10
+  const level1CompletedCount = currentStudent.completedModules.filter(id => id >= 1 && id <= 10).length;
+  const allLevel1ModulesCompleted = level1CompletedCount >= totalModules;
 
   // Level unlock logic
-  const level1Completed = currentStudent.completedModules.filter(id => id >= 1 && id <= 10).length >= 10 && (currentStudent.finalExamScore ?? 0) >= 70;
+  const level1Completed = level1CompletedCount >= 10 && (currentStudent.finalExamScore ?? 0) >= 70;
   // Level 2 is completed if all 10 modules (101-110) are in completed_modules OR quiz_scores
   const level2ModulesCompleted = currentStudent.completedModules.filter(id => id >= 101 && id <= 110).length >= 10;
   const level2QuizzesDone = Object.keys(currentStudent.quizScores).filter(k => Number(k) >= 101 && Number(k) <= 110).length >= 10;
