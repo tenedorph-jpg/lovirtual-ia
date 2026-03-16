@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import * as pdfjsLib from "https://esm.sh/pdfjs-dist@4.0.379/build/pdf.mjs";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -18,6 +19,25 @@ const MODULE_CONTEXT: Record<number, string> = {
   209: "Prompt Engineering (Chatbots): El estudiante debía diseñar un chatbot con system prompt completo, documentar 10+ conversaciones de prueba y analizar mejoras.",
   210: "Proyecto Final Integrado: El estudiante debía crear un proyecto combinando 3+ habilidades de módulos anteriores, documentando herramientas, objetivos, proceso, resultados y reflexión.",
 };
+
+/** Extract text from a PDF ArrayBuffer using pdf.js */
+async function extractPdfText(buffer: ArrayBuffer): Promise<string> {
+  try {
+    const doc = await pdfjsLib.getDocument({ data: new Uint8Array(buffer) }).promise;
+    const pages: string[] = [];
+    const maxPages = Math.min(doc.numPages, 20); // limit to 20 pages
+    for (let i = 1; i <= maxPages; i++) {
+      const page = await doc.getPage(i);
+      const content = await page.getTextContent();
+      const text = content.items.map((item: any) => item.str).join(" ");
+      pages.push(text);
+    }
+    return pages.join("\n\n");
+  } catch (e) {
+    console.error("PDF extraction error:", e);
+    return "";
+  }
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -46,7 +66,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Fetch assignment
     const { data: assignment, error: fetchErr } = await supabase
       .from("assignments")
       .select("*")
@@ -63,25 +82,32 @@ Deno.serve(async (req) => {
     const moduleId = assignment.module_id as number;
     const moduleContext = MODULE_CONTEXT[moduleId] || `Módulo ${moduleId} del Nivel 3 de LoVirtual Academy.`;
 
-    // Try to download and read the file content for text-based formats
+    // Extract file content based on format
     let fileContentSnippet = "";
     const ext = (assignment.file_name as string).split(".").pop()?.toLowerCase() || "";
-    const textFormats = ["pdf", "doc", "docx", "txt"];
-    const isTextBased = textFormats.includes(ext);
 
-    if (isTextBased) {
-      try {
-        const { data: fileData } = await supabase.storage
-          .from("assignments")
-          .download(assignment.file_path as string);
-        if (fileData) {
+    try {
+      const { data: fileData } = await supabase.storage
+        .from("assignments")
+        .download(assignment.file_path as string);
+
+      if (fileData) {
+        if (ext === "pdf") {
+          const buffer = await fileData.arrayBuffer();
+          const extracted = await extractPdfText(buffer);
+          fileContentSnippet = extracted.substring(0, 4000);
+        } else if (["txt", "md", "csv"].includes(ext)) {
           const text = await fileData.text();
-          // Take first 2000 chars as snippet
-          fileContentSnippet = text.substring(0, 2000);
+          fileContentSnippet = text.substring(0, 4000);
+        } else if (["doc", "docx", "ppt", "pptx", "xls", "xlsx"].includes(ext)) {
+          // Binary Office formats — provide metadata-only evaluation
+          fileContentSnippet = `[Archivo Office .${ext} recibido — evaluación basada en metadatos y contexto del módulo]`;
+        } else {
+          fileContentSnippet = `[Archivo .${ext} recibido — tipo binario/multimedia, evaluación basada en metadatos]`;
         }
-      } catch {
-        // Can't read file content, proceed with metadata only
       }
+    } catch {
+      // Can't read file, proceed with metadata only
     }
 
     // Fetch student name
@@ -104,7 +130,7 @@ DATOS DE LA ENTREGA:
 - Formato: .${ext}
 - Tamaño: ${Math.round((assignment.file_size as number) / 1024)} KB
 - Fecha de envío: ${assignment.created_at}
-${fileContentSnippet ? `\nCONTENIDO EXTRAÍDO (primeros 2000 caracteres):\n${fileContentSnippet}` : ""}
+${fileContentSnippet ? `\nCONTENIDO EXTRAÍDO DEL DOCUMENTO:\n${fileContentSnippet}` : "\n[No se pudo extraer contenido del archivo]"}
 
 CRITERIOS DE EVALUACIÓN:
 1. Cumplimiento de instrucciones (¿entregó lo solicitado?)
@@ -117,7 +143,8 @@ INSTRUCCIONES:
 - Asigna una calificación del 1 al 10 (7+ es aprobatorio)
 - Proporciona feedback constructivo en español (máx 3 oraciones)
 - Sé justo pero alentador
-- Si el archivo parece válido para el contexto del módulo, evalúa favorablemente
+- Si el contenido extraído es relevante para el módulo, evalúa con base en la calidad del texto
+- Si no se pudo extraer contenido (archivo binario/multimedia), evalúa favorablemente si el formato y tamaño son coherentes con la tarea
 - Si el formato del archivo no coincide con lo esperado, refleja eso en la nota
 
 Responde ÚNICAMENTE con este JSON (sin markdown):
@@ -158,10 +185,8 @@ Responde ÚNICAMENTE con este JSON (sin markdown):
         : { grade: 7, feedback: "Entrega recibida correctamente. Buen trabajo con las herramientas de IA." };
     }
 
-    // Clamp grade
     evaluation.grade = Math.max(1, Math.min(10, Math.round(evaluation.grade)));
 
-    // Update assignment with grade and feedback
     const { error: updateErr } = await supabase
       .from("assignments")
       .update({
@@ -173,7 +198,7 @@ Responde ÚNICAMENTE con este JSON (sin markdown):
 
     if (updateErr) throw new Error(`DB update error: ${updateErr.message}`);
 
-    // Check if all 10 Level 3 modules are graded for this student
+    // Check if all 10 Level 3 modules are graded and passed
     const { data: allAssignments } = await supabase
       .from("assignments")
       .select("module_id, grade, status")
@@ -186,17 +211,19 @@ Responde ÚNICAMENTE con este JSON (sin markdown):
     let certificateEligible = false;
 
     if (allAssignments && allAssignments.length === 10) {
-      const total = allAssignments.reduce((sum, a) => sum + (a.grade || 0), 0);
-      averageGrade = Math.round((total / 10) * 10) / 10;
-      certificateEligible = averageGrade >= 7;
+      const allPassed = allAssignments.every((a) => (a.grade || 0) >= 7);
+      if (allPassed) {
+        const total = allAssignments.reduce((sum, a) => sum + (a.grade || 0), 0);
+        averageGrade = Math.round((total / 10) * 10) / 10;
+        certificateEligible = true;
 
-      // Save Level 3 final score to student_progress
-      await supabase
-        .from("student_progress")
-        .update({
-          final_exam_score: Math.round(averageGrade * 10), // Store as percentage-like (e.g. 8.5 -> 85)
-        })
-        .eq("user_id", assignment.user_id);
+        await supabase
+          .from("student_progress")
+          .update({
+            final_exam_score: Math.round(averageGrade * 10),
+          })
+          .eq("user_id", assignment.user_id);
+      }
     }
 
     return new Response(

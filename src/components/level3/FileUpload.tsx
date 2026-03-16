@@ -186,6 +186,21 @@ const FileUpload: React.FC<FileUploadProps> = ({ moduleId, acceptedFormats, onUp
               <p className="text-sm text-foreground">{existingFile.feedback}</p>
             </div>
           )}
+          {!passed && (
+            <div className="mt-3 flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDelete}
+                disabled={deleting}
+                className="border-destructive/30 text-destructive hover:bg-destructive/10"
+              >
+                {deleting ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Upload className="w-4 h-4 mr-1" />}
+                Reintentar — Volver a subir
+              </Button>
+              <span className="text-xs text-muted-foreground">Sube un nuevo archivo para ser evaluado nuevamente</span>
+            </div>
+          )}
         </div>
       );
     }
