@@ -223,7 +223,7 @@ const StudentDashboard: React.FC = () => {
         </div>
 
         {/* Nivel 2 — collapsible */}
-        <div className="mb-8">
+        <div className="mb-4">
           <button
             onClick={() => setLevel2Open(o => !o)}
             className="w-full flex items-center justify-between bg-card border border-border rounded-xl px-5 py-4 hover:border-primary/50 transition-colors"
@@ -245,6 +245,34 @@ const StudentDashboard: React.FC = () => {
               <Button onClick={() => navigate('/level-2')} className="lovirtual-gradient-bg text-white gap-2 flex-shrink-0">
                 <Sparkles className="w-4 h-4" />
                 Ver Ruta de Aprendizaje
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* Nivel 3 — collapsible */}
+        <div className="mb-8">
+          <button
+            onClick={() => setLevel3Open(o => !o)}
+            className="w-full flex items-center justify-between bg-card border border-border rounded-xl px-5 py-4 hover:border-primary/50 transition-colors"
+          >
+            <div className="flex items-center gap-4 text-left">
+              <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground font-bold text-sm flex-shrink-0">
+                N3
+              </div>
+              <div>
+                <h3 className="font-bold text-foreground">Nivel 3: Dominio Práctico y Entregables con IA</h3>
+                <p className="text-sm text-muted-foreground">100% práctico — sube tus entregables para cada módulo</p>
+              </div>
+            </div>
+            <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform duration-200 ${level3Open ? 'rotate-180' : ''}`} />
+          </button>
+          {level3Open && (
+            <div className="mt-3 lovirtual-card flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <p className="text-muted-foreground text-sm">Sube tus proyectos prácticos y demuestra tu dominio de herramientas de IA.</p>
+              <Button onClick={() => navigate('/level-3')} className="lovirtual-gradient-bg text-white gap-2 flex-shrink-0">
+                <Sparkles className="w-4 h-4" />
+                Ver Entregables
               </Button>
             </div>
           )}
