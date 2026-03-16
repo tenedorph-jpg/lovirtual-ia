@@ -65,6 +65,12 @@ const StudentDashboard: React.FC = () => {
   const totalModules = courseModules.length;
   const allModulesCompleted = completedModules === totalModules;
 
+  // Level unlock logic
+  const level1Completed = currentStudent.completedModules.filter(id => id >= 1 && id <= 10).length >= 10 && (currentStudent.finalExamScore ?? 0) >= 70;
+  const level2Completed = currentStudent.completedModules.filter(id => id >= 101 && id <= 110).length >= 10;
+  const level2Unlocked = level1Completed;
+  const level3Unlocked = level2Completed;
+
   const getModuleStatus = (moduleId: number): 'completed' | 'available' | 'locked' => {
     if (currentStudent.completedModules.includes(moduleId)) {
       return 'completed';
