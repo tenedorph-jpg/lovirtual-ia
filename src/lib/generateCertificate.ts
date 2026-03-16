@@ -85,15 +85,17 @@ export async function generateCertificatePDF(studentName: string, score: number,
   pdf.text('A C A D E M I A   L O V I R T U A L', w / 2, 27.5, { align: 'center', baseline: 'bottom' });
 
   // ── Main title ─────────────────────────────────────────────────────────────
+  const info = LEVEL_INFO[level] || LEVEL_INFO.level1;
+
   (pdf as any).setFont('times', 'bold');
   pdf.setFontSize(46);
   pdf.setTextColor(1, 80, 125);
-  pdf.text('CERTIFICADO', w / 2, 48, { align: 'center' });
+  pdf.text(info.title, w / 2, 48, { align: 'center' });
 
   (pdf as any).setFont('helvetica', 'normal');
   pdf.setFontSize(13);
   pdf.setTextColor(100, 100, 100);
-  pdf.text('D E   F I N A L I Z A C I Ó N', w / 2, 57, { align: 'center' });
+  pdf.text(info.subtitle, w / 2, 57, { align: 'center' });
 
   pdf.setDrawColor(184, 152, 61);
   (pdf as any).setLineWidth(0.6);
