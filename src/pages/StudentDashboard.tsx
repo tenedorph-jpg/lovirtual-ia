@@ -22,12 +22,34 @@ import ThemeToggle from '@/components/ThemeToggle';
 import CourseAccordion from '@/components/CourseAccordion';
 
 const StudentDashboard: React.FC = () => {
-  const { currentStudent, logout } = useAuth();
+  const { currentStudent, logout, user, studentProgress, markCertificateGenerated } = useAuth();
   const navigate = useNavigate();
 
   const [level1Open, setLevel1Open] = useState(false);
   const [level2Open, setLevel2Open] = useState(false);
   const [level3Open, setLevel3Open] = useState(false);
+  const [level3CertReady, setLevel3CertReady] = useState<{ totalScore: number } | null>(null);
+
+  // Check if Level 3 certificate is available
+  const checkLevel3Cert = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('assignments')
+      .select('module_id, grade, status')
+      .eq('user_id', user.id)
+      .gte('module_id', 201)
+      .lte('module_id', 210)
+      .eq('status', 'graded');
+    if (data && data.length === 10) {
+      const allPassed = data.every(a => (a.grade || 0) >= 7);
+      if (allPassed) {
+        const totalScore = data.reduce((s, a) => s + (a.grade || 0), 0);
+        setLevel3CertReady({ totalScore });
+      }
+    }
+  }, [user]);
+
+  useEffect(() => { checkLevel3Cert(); }, [checkLevel3Cert]);
 
   if (!currentStudent) {
     navigate('/');
