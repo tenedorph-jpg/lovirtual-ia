@@ -26,6 +26,9 @@ export interface RealStudent {
 export interface RealCourseData {
   kpis: { inscritos: number; finalizados: number; tasa: string; pendientes: number };
   distribucion: { perfil: string; cantidad: number; fill: string }[];
+  tiempoPromedio: { perfil: string; horas: number }[];
+  puntuacionPromedio: { perfil: string; puntuacion: number }[];
+  errores: { perfil: string; tasa: string }[];
   estudiantes: RealStudent[];
   loading: boolean;
 }
@@ -137,9 +140,76 @@ export function useAdminStudents(level: string = 'nivel1') {
       fill: COLORS[i % COLORS.length],
     }));
 
+    // Tiempo promedio por perfil (hours based on time_spent_minutes)
+    const timeByProfile: Record<string, { total: number; count: number }> = {};
+    // Error rate by profile (from quiz_scores: incorrect = score < 70)
+    const errorByProfile: Record<string, { totalQuizzes: number; failedQuizzes: number }> = {};
+    // Score averages by profile
+    const scoreByProfile: Record<string, { total: number; count: number }> = {};
+
+    for (const p of profiles) {
+      if (adminIds.has(p.user_id)) continue;
+      const sp = progressMap.get(p.user_id);
+      if (!sp) continue;
+
+      const label = PROFILE_LABELS[p.lovirtual_role] || p.lovirtual_role;
+
+      // Time
+      const mins = sp.time_spent_minutes || 0;
+      if (mins > 0) {
+        if (!timeByProfile[label]) timeByProfile[label] = { total: 0, count: 0 };
+        timeByProfile[label].total += mins;
+        timeByProfile[label].count += 1;
+      }
+
+      // Quiz scores for this level
+      const quizScores = sp.quiz_scores || {};
+      const levelScores = Object.entries(quizScores).filter(([key]) => {
+        const mid = parseInt(key);
+        return mid >= range.min && mid <= range.max;
+      });
+
+      if (levelScores.length > 0) {
+        if (!errorByProfile[label]) errorByProfile[label] = { totalQuizzes: 0, failedQuizzes: 0 };
+        if (!scoreByProfile[label]) scoreByProfile[label] = { total: 0, count: 0 };
+
+        for (const [, val] of levelScores) {
+          const score = typeof val === 'number' ? val : 0;
+          errorByProfile[label].totalQuizzes += 1;
+          if (score < 70) errorByProfile[label].failedQuizzes += 1;
+          scoreByProfile[label].total += score;
+          scoreByProfile[label].count += 1;
+        }
+      }
+    }
+
+    const tiempoPromedio = Object.entries(timeByProfile)
+      .map(([perfil, { total, count }]) => ({
+        perfil,
+        horas: Math.round((total / count / 60) * 10) / 10,
+      }))
+      .sort((a, b) => b.horas - a.horas);
+
+    const errores = Object.entries(errorByProfile)
+      .map(([perfil, { totalQuizzes, failedQuizzes }]) => ({
+        perfil,
+        tasa: totalQuizzes > 0 ? `${Math.round((failedQuizzes / totalQuizzes) * 100)}%` : '0%',
+      }))
+      .sort((a, b) => parseFloat(b.tasa) - parseFloat(a.tasa));
+
+    const puntuacionPromedio = Object.entries(scoreByProfile)
+      .map(([perfil, { total, count }]) => ({
+        perfil,
+        puntuacion: Math.round((total / count) * 10) / 10,
+      }))
+      .sort((a, b) => b.puntuacion - a.puntuacion);
+
     return {
       kpis: { inscritos: total, finalizados, tasa, pendientes },
       distribucion,
+      tiempoPromedio,
+      puntuacionPromedio,
+      errores,
       estudiantes: students,
       loading,
     };
