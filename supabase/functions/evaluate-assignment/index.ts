@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import * as pdfjsLib from "https://esm.sh/pdfjs-dist@4.0.379/build/pdf.mjs";
+import { unzipSync } from "https://esm.sh/fflate@0.8.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -20,12 +21,21 @@ const MODULE_CONTEXT: Record<number, string> = {
   210: "Proyecto Final Integrado: El estudiante debía crear un proyecto combinando 3+ habilidades de módulos anteriores, documentando herramientas, objetivos, proceso, resultados y reflexión.",
 };
 
+const IMAGE_EXTENSIONS = new Set(["png", "jpg", "jpeg", "webp", "gif"]);
+const IMAGE_MIME: Record<string, string> = {
+  png: "image/png",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  webp: "image/webp",
+  gif: "image/gif",
+};
+
 /** Extract text from a PDF ArrayBuffer using pdf.js */
 async function extractPdfText(buffer: ArrayBuffer): Promise<string> {
   try {
     const doc = await pdfjsLib.getDocument({ data: new Uint8Array(buffer) }).promise;
     const pages: string[] = [];
-    const maxPages = Math.min(doc.numPages, 20); // limit to 20 pages
+    const maxPages = Math.min(doc.numPages, 20);
     for (let i = 1; i <= maxPages; i++) {
       const page = await doc.getPage(i);
       const content = await page.getTextContent();
@@ -36,6 +46,64 @@ async function extractPdfText(buffer: ArrayBuffer): Promise<string> {
   } catch (e) {
     console.error("PDF extraction error:", e);
     return "";
+  }
+}
+
+function getFileExtension(name: string): string {
+  return (name.split(".").pop() || "").toLowerCase();
+}
+
+/** Extract contents from a ZIP buffer. Returns text snippets and base64-encoded images. */
+function extractZipContents(buffer: ArrayBuffer): {
+  textSnippets: string[];
+  images: { media_type: string; data: string; name: string }[];
+  fileList: string[];
+} {
+  const textSnippets: string[] = [];
+  const images: { media_type: string; data: string; name: string }[] = [];
+  const fileList: string[] = [];
+
+  try {
+    const unzipped = unzipSync(new Uint8Array(buffer));
+
+    for (const [filename, fileData] of Object.entries(unzipped)) {
+      // Skip directories and hidden/system files
+      if (filename.endsWith("/") || filename.startsWith("__MACOSX") || filename.startsWith(".")) continue;
+      fileList.push(filename);
+
+      const ext = getFileExtension(filename);
+
+      if (IMAGE_EXTENSIONS.has(ext) && images.length < 10) {
+        // Convert image to base64 for Claude vision
+        const base64 = btoa(String.fromCharCode(...fileData));
+        images.push({
+          media_type: IMAGE_MIME[ext] || "image/png",
+          data: base64,
+          name: filename,
+        });
+      } else if (["txt", "md", "csv"].includes(ext)) {
+        const text = new TextDecoder().decode(fileData);
+        textSnippets.push(`--- ${filename} ---\n${text.substring(0, 2000)}`);
+      } else if (ext === "pdf") {
+        // We can't easily parse PDF inside ZIP synchronously, note it
+        textSnippets.push(`[Archivo PDF encontrado dentro del ZIP: ${filename}]`);
+      }
+    }
+  } catch (e) {
+    console.error("ZIP extraction error:", e);
+    return { textSnippets: ["[ERROR: No se pudo descomprimir el archivo ZIP. El archivo puede estar corrupto.]"], images: [], fileList: [] };
+  }
+
+  return { textSnippets, images, fileList };
+}
+
+/** Convert raw image bytes to base64 for Claude */
+function imageToBase64(buffer: ArrayBuffer, ext: string): { media_type: string; data: string } | null {
+  try {
+    const data = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+    return { media_type: IMAGE_MIME[ext] || "image/png", data };
+  } catch {
+    return null;
   }
 }
 
@@ -82,9 +150,11 @@ Deno.serve(async (req) => {
     const moduleId = assignment.module_id as number;
     const moduleContext = MODULE_CONTEXT[moduleId] || `Módulo ${moduleId} del Nivel 3 de LoVirtual Academy.`;
 
-    // Extract file content based on format
+    // Download file
     let fileContentSnippet = "";
-    const ext = (assignment.file_name as string).split(".").pop()?.toLowerCase() || "";
+    let extractedImages: { media_type: string; data: string; name: string }[] = [];
+    let contentExtractionFailed = false;
+    const ext = getFileExtension(assignment.file_name as string);
 
     try {
       const { data: fileData } = await supabase.storage
@@ -92,22 +162,63 @@ Deno.serve(async (req) => {
         .download(assignment.file_path as string);
 
       if (fileData) {
-        if (ext === "pdf") {
+        if (ext === "zip") {
+          // ZIP: extract contents including images
+          const buffer = await fileData.arrayBuffer();
+          const { textSnippets, images, fileList } = extractZipContents(buffer);
+          extractedImages = images;
+
+          if (textSnippets.length === 0 && images.length === 0 && fileList.length === 0) {
+            contentExtractionFailed = true;
+            fileContentSnippet = "[ERROR: El archivo ZIP está vacío o no se pudo descomprimir.]";
+          } else {
+            fileContentSnippet = `ARCHIVOS EN EL ZIP (${fileList.length} archivos):\n${fileList.join("\n")}\n\n`;
+            if (textSnippets.length > 0) {
+              fileContentSnippet += `CONTENIDO DE TEXTO EXTRAÍDO:\n${textSnippets.join("\n\n").substring(0, 4000)}`;
+            }
+            if (images.length > 0) {
+              fileContentSnippet += `\n\n[${images.length} imagen(es) extraída(s) del ZIP y enviadas para evaluación visual]`;
+            }
+            if (images.length === 0 && textSnippets.every(t => t.includes("ERROR"))) {
+              contentExtractionFailed = true;
+            }
+          }
+        } else if (ext === "pdf") {
           const buffer = await fileData.arrayBuffer();
           const extracted = await extractPdfText(buffer);
-          fileContentSnippet = extracted.substring(0, 4000);
+          if (extracted.trim().length === 0) {
+            fileContentSnippet = "[No se pudo extraer texto del PDF. Puede ser un PDF escaneado o basado en imágenes.]";
+            contentExtractionFailed = true;
+          } else {
+            fileContentSnippet = extracted.substring(0, 4000);
+          }
         } else if (["txt", "md", "csv"].includes(ext)) {
           const text = await fileData.text();
           fileContentSnippet = text.substring(0, 4000);
+        } else if (IMAGE_EXTENSIONS.has(ext)) {
+          // Direct image upload — send as vision
+          const buffer = await fileData.arrayBuffer();
+          const img = imageToBase64(buffer, ext);
+          if (img) {
+            extractedImages.push({ ...img, name: assignment.file_name as string });
+            fileContentSnippet = "[Imagen enviada para evaluación visual]";
+          } else {
+            contentExtractionFailed = true;
+            fileContentSnippet = "[ERROR: No se pudo procesar la imagen.]";
+          }
         } else if (["doc", "docx", "ppt", "pptx", "xls", "xlsx"].includes(ext)) {
-          // Binary Office formats — provide metadata-only evaluation
           fileContentSnippet = `[Archivo Office .${ext} recibido — evaluación basada en metadatos y contexto del módulo]`;
         } else {
-          fileContentSnippet = `[Archivo .${ext} recibido — tipo binario/multimedia, evaluación basada en metadatos]`;
+          fileContentSnippet = `[Archivo .${ext} recibido — tipo binario/multimedia, NO se pudo leer el contenido]`;
+          contentExtractionFailed = true;
         }
+      } else {
+        contentExtractionFailed = true;
+        fileContentSnippet = "[ERROR: No se pudo descargar el archivo del almacenamiento.]";
       }
-    } catch {
-      // Can't read file, proceed with metadata only
+    } catch (e) {
+      contentExtractionFailed = true;
+      fileContentSnippet = `[ERROR: Fallo técnico al procesar el archivo: ${e instanceof Error ? e.message : "error desconocido"}]`;
     }
 
     // Fetch student name
@@ -119,9 +230,17 @@ Deno.serve(async (req) => {
 
     const studentName = profile?.full_name || "Estudiante";
 
-    const prompt = `Eres el evaluador académico de la Academia LoVirtual. Debes calificar el entregable práctico de un estudiante del Nivel 3: Dominio Práctico y Creación de Entregables con IA.
+    const systemPrompt = `Eres el evaluador académico ESTRICTO de la Academia LoVirtual. Debes calificar entregables prácticos del Nivel 3.
 
-CONTEXTO DEL MÓDULO:
+REGLA CRÍTICA DE EVALUACIÓN:
+Si por CUALQUIER razón técnica NO pudiste leer, ver o acceder al contenido real del archivo (ej: no se pudo descomprimir un ZIP, el archivo está corrupto, faltan las imágenes requeridas, el contenido extraído está vacío, o el formato no permite leer el contenido), ESTÁ ESTRICTAMENTE PROHIBIDO dar una nota aprobatoria (>= 7). En ese caso DEBES:
+- Dar una calificación de 1/10
+- Explicar claramente en el feedback qué problema técnico hubo
+- Indicar al estudiante que vuelva a subir el archivo en un formato legible
+
+Solo da notas aprobatorias (7-10) cuando hayas podido VERIFICAR y EVALUAR el contenido real del entregable.`;
+
+    const userPrompt = `CONTEXTO DEL MÓDULO:
 ${moduleContext}
 
 DATOS DE LA ENTREGA:
@@ -130,6 +249,7 @@ DATOS DE LA ENTREGA:
 - Formato: .${ext}
 - Tamaño: ${Math.round((assignment.file_size as number) / 1024)} KB
 - Fecha de envío: ${assignment.created_at}
+- ¿Se pudo extraer contenido?: ${contentExtractionFailed ? "NO — hubo problemas técnicos" : "SÍ"}
 ${fileContentSnippet ? `\nCONTENIDO EXTRAÍDO DEL DOCUMENTO:\n${fileContentSnippet}` : "\n[No se pudo extraer contenido del archivo]"}
 
 CRITERIOS DE EVALUACIÓN:
@@ -142,16 +262,33 @@ CRITERIOS DE EVALUACIÓN:
 INSTRUCCIONES:
 - Asigna una calificación del 1 al 10 (7+ es aprobatorio)
 - Proporciona feedback constructivo en español (máx 3 oraciones)
-- Sé justo pero alentador
-- Si el contenido extraído es relevante para el módulo, evalúa con base en la calidad del texto
-- Si no se pudo extraer contenido (archivo binario/multimedia), evalúa favorablemente si el formato y tamaño son coherentes con la tarea
-- Si el formato del archivo no coincide con lo esperado, refleja eso en la nota
+- RECUERDA: Si NO pudiste ver/leer el contenido real, la nota DEBE ser 1/10
+- Si hay imágenes adjuntas, evalúalas visualmente con rigor
 
 Responde ÚNICAMENTE con este JSON (sin markdown):
 {
   "grade": <número del 1 al 10>,
   "feedback": "<feedback constructivo en español>"
 }`;
+
+    // Build Claude messages with multimodal support
+    const contentParts: any[] = [{ type: "text", text: userPrompt }];
+
+    // Add images for vision evaluation (max 10 images, each max ~5MB base64)
+    for (const img of extractedImages.slice(0, 10)) {
+      contentParts.push({
+        type: "image",
+        source: {
+          type: "base64",
+          media_type: img.media_type,
+          data: img.data,
+        },
+      });
+      contentParts.push({
+        type: "text",
+        text: `[Imagen: ${img.name}]`,
+      });
+    }
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -162,8 +299,9 @@ Responde ÚNICAMENTE con este JSON (sin markdown):
       },
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
-        max_tokens: 300,
-        messages: [{ role: "user", content: prompt }],
+        max_tokens: 400,
+        system: systemPrompt,
+        messages: [{ role: "user", content: contentParts }],
       }),
     });
 
@@ -180,12 +318,23 @@ Responde ÚNICAMENTE con este JSON (sin markdown):
       evaluation = JSON.parse(rawContent);
     } catch {
       const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
-      evaluation = jsonMatch
-        ? JSON.parse(jsonMatch[0])
-        : { grade: 7, feedback: "Entrega recibida correctamente. Buen trabajo con las herramientas de IA." };
+      if (jsonMatch) {
+        evaluation = JSON.parse(jsonMatch[0]);
+      } else {
+        // If content extraction failed, default to failing grade
+        evaluation = contentExtractionFailed
+          ? { grade: 1, feedback: "No se pudo procesar tu archivo. Por favor, vuelve a subirlo en un formato compatible (PDF, imágenes, o ZIP con archivos legibles)." }
+          : { grade: 7, feedback: "Entrega recibida correctamente. Buen trabajo con las herramientas de IA." };
+      }
     }
 
     evaluation.grade = Math.max(1, Math.min(10, Math.round(evaluation.grade)));
+
+    // Enforce: if extraction failed, cap grade at max 1
+    if (contentExtractionFailed && evaluation.grade >= 7) {
+      evaluation.grade = 1;
+      evaluation.feedback = "No se pudo verificar el contenido de tu archivo. Por favor, vuelve a subirlo en un formato legible (PDF con texto, imágenes PNG/JPG, o ZIP con archivos válidos). " + evaluation.feedback;
+    }
 
     const { error: updateErr } = await supabase
       .from("assignments")
@@ -215,16 +364,15 @@ Responde ÚNICAMENTE con este JSON (sin markdown):
       const allPassed = allAssignments.every((a) => (a.grade || 0) >= 7);
       if (allPassed) {
         const total = allAssignments.reduce((sum, a) => sum + (a.grade || 0), 0);
-        totalScore = total; // Sum out of 100
+        totalScore = total;
         averageGrade = Math.round((total / 10) * 10) / 10;
         certificateEligible = true;
 
-        // Save total score (sum of 10 grades = X/100) to student_progress
         await supabase
           .from("student_progress")
           .update({
             final_exam_score: totalScore,
-            certificate_generated: false, // Will be set true when student downloads
+            certificate_generated: false,
           })
           .eq("user_id", assignment.user_id);
       }
