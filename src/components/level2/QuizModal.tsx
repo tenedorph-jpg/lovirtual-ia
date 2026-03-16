@@ -28,15 +28,11 @@ const QuizModal: React.FC<Props> = ({ open, onOpenChange, moduleTitle, quiz, onC
     setSelected(option);
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!selected) return;
     setSubmitted(true);
     if (selected === quiz.correctAnswer && onCorrectAnswer) {
-      try {
-        await onCorrectAnswer(100);
-      } catch (error) {
-        console.error('Error saving quiz result:', error);
-      }
+      onCorrectAnswer(100);
     }
   };
 

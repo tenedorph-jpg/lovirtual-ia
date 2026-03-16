@@ -31,13 +31,9 @@ const Level2Page: React.FC = () => {
   };
 
   const handleModuleComplete = async (moduleId: number, score?: number) => {
-    try {
-      await completeModule(moduleId);
-      if (score !== undefined) {
-        await updateStudentProgress(moduleId, score);
-      }
-    } catch (error) {
-      console.error('Error completing module:', error);
+    await completeModule(moduleId);
+    if (score !== undefined) {
+      await updateStudentProgress(moduleId, score);
     }
   };
 

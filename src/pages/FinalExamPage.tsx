@@ -295,7 +295,7 @@ const CertificateView: React.FC<{
   const certId = `CERT-${Date.now()}-${Math.floor(Math.random() * 100)}`;
   const courseName = 'Inteligencia Artificial y Herramientas Digitales: De Usuario a Creador';
 
-  const generatePDF = () => generateCertificatePDF(studentName, score, 'level1');
+  const generatePDF = () => generateCertificatePDF(studentName, score);
 
   const handleWhatsApp = () => {
     const message = encodeURIComponent(

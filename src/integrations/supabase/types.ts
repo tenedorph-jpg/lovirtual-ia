@@ -14,48 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      assignments: {
-        Row: {
-          created_at: string
-          feedback: string | null
-          file_name: string
-          file_path: string
-          file_size: number
-          grade: number | null
-          id: string
-          module_id: number
-          status: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          feedback?: string | null
-          file_name: string
-          file_path: string
-          file_size?: number
-          grade?: number | null
-          id?: string
-          module_id: number
-          status?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          feedback?: string | null
-          file_name?: string
-          file_path?: string
-          file_size?: number
-          grade?: number | null
-          id?: string
-          module_id?: number
-          status?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       profiles: {
         Row: {
           created_at: string

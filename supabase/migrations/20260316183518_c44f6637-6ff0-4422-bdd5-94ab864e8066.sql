@@ -1,1 +1,0 @@
-UPDATE student_progress SET progress = 100 WHERE user_id = 'bb12d382-27a7-4958-99c7-2d2237151e74';

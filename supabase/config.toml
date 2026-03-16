@@ -1,4 +1,1 @@
 project_id = "tgpzwadegbcwooltkcnf"
-
-[functions.evaluate-assignment]
-verify_jwt = false

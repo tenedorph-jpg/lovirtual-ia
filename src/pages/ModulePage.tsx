@@ -70,51 +70,42 @@ const ModulePage: React.FC = () => {
 
   const handleSubmitQuiz = async () => {
     setQuizSubmitted(true);
+    setIsEvaluating(true);
 
-    if (isModule10) {
-      // Module 10: use Claude for evaluation
-      setIsEvaluating(true);
-      let evaluation: ClaudeEvaluation | null = null;
-      try {
-        const { data, error } = await supabase.functions.invoke('evaluate-exam', {
-          body: {
-            questions: module.quiz,
-            selectedAnswers,
-            studentName: currentStudent?.name ?? 'Estudiante',
-            examType: 'module10',
-            moduleTitle: module.title,
-          },
-        });
-        if (!error && data) evaluation = data as ClaudeEvaluation;
-      } catch {
-        // fallback below
-      }
-
-      if (!evaluation) {
-        const rawScore = calculateScore();
-        evaluation = {
-          approved: rawScore >= 70,
-          score: rawScore,
-          verdict: rawScore >= 70 ? 'APROBADO' : 'NO APROBADO',
-          feedback: rawScore >= 70
-            ? `¡Excelente trabajo, ${currentStudent?.name}! Dominas el módulo.`
-            : `${currentStudent?.name}, repasa el contenido e inténtalo de nuevo.`,
-          details: [],
-        };
-      }
-
-      setClaudeEval(evaluation);
-      setIsEvaluating(false);
-      setShowResults(true);
-      updateStudentProgress(module.id, evaluation.score);
-      if (evaluation.approved) completeModule(module.id);
-    } else {
-      // Other modules: standard evaluation
-      const score = calculateScore();
-      setShowResults(true);
-      updateStudentProgress(module.id, score);
-      if (score >= 70) completeModule(module.id);
+    let evaluation: ClaudeEvaluation | null = null;
+    try {
+      const { data, error } = await supabase.functions.invoke('evaluate-exam', {
+        body: {
+          questions: module.quiz,
+          selectedAnswers,
+          studentName: currentStudent?.name ?? 'Estudiante',
+          examType: 'final',
+          moduleTitle: module.title,
+        },
+      });
+      if (!error && data && !data.error) evaluation = data as ClaudeEvaluation;
+    } catch {
+      // fallback below
     }
+
+    if (!evaluation) {
+      const rawScore = calculateScore();
+      evaluation = {
+        approved: rawScore >= 70,
+        score: rawScore,
+        verdict: rawScore >= 70 ? 'APROBADO' : 'NO APROBADO',
+        feedback: rawScore >= 70
+          ? `¡Excelente trabajo, ${currentStudent?.name}! Dominas el módulo "${module.title}".`
+          : `${currentStudent?.name}, repasa el contenido del módulo "${module.title}" e inténtalo de nuevo.`,
+        details: [],
+      };
+    }
+
+    setClaudeEval(evaluation);
+    setIsEvaluating(false);
+    setShowResults(true);
+    updateStudentProgress(module.id, evaluation.score);
+    if (evaluation.approved) completeModule(module.id);
   };
 
   const allQuestionsAnswered = module.quiz.every(q => selectedAnswers[q.id] !== undefined);
@@ -347,13 +338,13 @@ const ModulePage: React.FC = () => {
                 </div>
               </>
             ) : isEvaluating ? (
-              // Claude evaluating screen (Module 10 only)
+              // Claude evaluating screen
               <div className="text-center animate-fade-in py-12">
                 <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 mb-6">
                   <Brain className="w-10 h-10 text-primary animate-pulse" />
                 </div>
-                <h3 className="text-xl font-bold text-foreground mb-2">Claude está revisando tu quiz</h3>
-                <p className="text-muted-foreground text-sm mb-4">Analizando tu comprensión del módulo...</p>
+                <h3 className="text-xl font-bold text-foreground mb-2">Claude Sonnet 4.6 está evaluando tu quiz</h3>
+                <p className="text-muted-foreground text-sm mb-4">Analizando tu comprensión de "{module.title}"...</p>
                 <div className="flex justify-center gap-1">
                   {[0,1,2].map(i => (
                     <div key={i} className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
@@ -380,8 +371,8 @@ const ModulePage: React.FC = () => {
                   Tu puntuación: <span className="font-bold text-foreground">{score}%</span>
                 </p>
 
-                {/* Claude AI Evaluation Card — Module 10 only */}
-                {isModule10 && claudeEval && (
+                {/* Claude AI Evaluation Card */}
+                {claudeEval && (
                   <div className={`my-4 p-4 rounded-xl border-2 text-left max-w-lg mx-auto ${passed ? 'border-success/40 bg-success/5' : 'border-destructive/40 bg-destructive/5'}`}>
                     <div className="flex items-center gap-2 mb-2">
                       <Brain className="w-4 h-4 text-primary flex-shrink-0" />
@@ -407,7 +398,7 @@ const ModulePage: React.FC = () => {
                 )}
 
                 {/* Certificate download button — Module 10 only */}
-                {isModule10 && passed && (
+                {isModule10 && passed && currentStudent && (
                   <Button
                     size="lg"
                     onClick={async () => {

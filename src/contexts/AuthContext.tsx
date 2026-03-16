@@ -128,39 +128,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      // Handle token refresh failures and sign-out events
-      if (event === 'TOKEN_REFRESHED' && !session) {
-        // Token refresh failed — clear stale data
-        console.warn('Session token refresh failed, clearing local state');
-        localStorage.removeItem('sb-' + import.meta.env.VITE_SUPABASE_PROJECT_ID + '-auth-token');
-        setUser(null);
-        setProfile(null);
-        setStudentProgress(null);
-        setIsAdmin(false);
-        setLoading(false);
-        return;
-      }
-      if (event === 'SIGNED_OUT') {
-        setUser(null);
-        setProfile(null);
-        setStudentProgress(null);
-        setIsAdmin(false);
-        setLoading(false);
-        return;
-      }
       if (session?.user) {
         setUser(session.user);
+        // Use setTimeout to avoid Supabase deadlock
         setTimeout(async () => {
-          try {
-            await fetchProfile(session.user.id);
-            await fetchProgress(session.user.id);
-            const admin = await checkAdmin(session.user.id);
-            if (admin) await fetchAllForAdmin();
-          } catch (err) {
-            console.error('Error loading user data, clearing session:', err);
-            localStorage.removeItem('sb-' + import.meta.env.VITE_SUPABASE_PROJECT_ID + '-auth-token');
-            await supabase.auth.signOut();
-          }
+          await fetchProfile(session.user.id);
+          await fetchProgress(session.user.id);
+          const admin = await checkAdmin(session.user.id);
+          if (admin) await fetchAllForAdmin();
           setLoading(false);
         }, 0);
       } else {
@@ -175,16 +150,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
         setUser(session.user);
-        try {
-          await fetchProfile(session.user.id);
-          await fetchProgress(session.user.id);
-          const admin = await checkAdmin(session.user.id);
-          if (admin) await fetchAllForAdmin();
-        } catch (err) {
-          console.error('Error loading initial session data:', err);
-          localStorage.removeItem('sb-' + import.meta.env.VITE_SUPABASE_PROJECT_ID + '-auth-token');
-          await supabase.auth.signOut();
-        }
+        await fetchProfile(session.user.id);
+        await fetchProgress(session.user.id);
+        const admin = await checkAdmin(session.user.id);
+        if (admin) await fetchAllForAdmin();
       }
       setLoading(false);
     });
@@ -222,22 +191,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const updateStudentProgress = async (moduleId: number, score: number) => {
     if (!user || !studentProgress) return;
     const newQuizScores: Record<string, number> = { ...studentProgress.quiz_scores, [moduleId]: score };
-
-    // Calculate progress PER LEVEL based on module ID ranges
-    // Level 1: modules 1-10, Level 2: modules 101-110
-    const level1Ids = Object.keys(newQuizScores).filter(k => Number(k) >= 1 && Number(k) <= 10);
-    const level2Ids = Object.keys(newQuizScores).filter(k => Number(k) >= 101 && Number(k) <= 110);
-
-    // Average score across ALL quizzes
-    const allVals = Object.values(newQuizScores) as number[];
-    const avgScore = allVals.length > 0 ? Math.round(allVals.reduce((a, b) => a + b, 0) / allVals.length) : 0;
-
-    // Progress = max of both levels (or combined logic — here we use the level of the current module)
-    const isLevel2Module = moduleId >= 101 && moduleId <= 110;
-    const relevantCount = isLevel2Module ? level2Ids.length : level1Ids.length;
-    const totalModulesInLevel = 10;
-    const progress = Math.min(Math.round((relevantCount / totalModulesInLevel) * 100), 99);
-    // NOTE: progress is capped at 99% — only the final exam sets it to 100%
+    const completedCount = Object.keys(newQuizScores).length;
+    const vals = Object.values(newQuizScores) as number[];
+    const totalScore = vals.reduce((a, b) => a + b, 0);
+    const avgScore = Math.round(totalScore / completedCount);
+    const progress = Math.round((completedCount / 10) * 100);
 
     await supabase
       .from('student_progress')

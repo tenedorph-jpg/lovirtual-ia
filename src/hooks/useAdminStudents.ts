@@ -6,13 +6,6 @@ const COLORS = [
   "#0ea5e9", "#0284c7", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899",
 ];
 
-// Level 1 uses module IDs 1-10, Level 2 uses 101-110
-const LEVEL_MODULE_RANGES: Record<string, { min: number; max: number; total: number }> = {
-  nivel1: { min: 1, max: 10, total: 10 },
-  nivel2: { min: 101, max: 110, total: 10 },
-  nivel3: { min: 201, max: 210, total: 10 },
-};
-
 export interface RealStudent {
   id: string;
   nombre: string;
@@ -26,41 +19,67 @@ export interface RealStudent {
 export interface RealCourseData {
   kpis: { inscritos: number; finalizados: number; tasa: string; pendientes: number };
   distribucion: { perfil: string; cantidad: number; fill: string }[];
-  tiempoPromedio: { perfil: string; horas: number }[];
-  puntuacionPromedio: { perfil: string; puntuacion: number }[];
-  errores: { perfil: string; tasa: string }[];
   estudiantes: RealStudent[];
   loading: boolean;
 }
 
-export function useAdminStudents(level: string = 'nivel1') {
-  const [allData, setAllData] = useState<{
-    profiles: any[];
-    progress: any[];
-    adminIds: Set<string>;
-  }>({ profiles: [], progress: [], adminIds: new Set() });
+export function useAdminStudents() {
+  const [students, setStudents] = useState<RealStudent[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [profilesRes, progressRes, rolesRes] = await Promise.all([
-          supabase.from('profiles').select('*'),
-          supabase.from('student_progress').select('*'),
-          supabase.from('user_roles').select('user_id').eq('role', 'admin'),
-        ]);
+        // Fetch profiles (excluding admins from user_roles)
+        const { data: profiles, error: pErr } = await supabase
+          .from('profiles')
+          .select('*');
 
-        if (profilesRes.error) throw profilesRes.error;
-        if (progressRes.error) throw progressRes.error;
+        if (pErr) throw pErr;
 
-        const adminIds = new Set((rolesRes.data || []).map(r => r.user_id));
+        // Fetch all student progress
+        const { data: progress, error: sErr } = await supabase
+          .from('student_progress')
+          .select('*');
 
-        setAllData({
-          profiles: profilesRes.data || [],
-          progress: progressRes.data || [],
-          adminIds,
-        });
+        if (sErr) throw sErr;
+
+        // Fetch admin user_ids to exclude them from student list
+        const { data: adminRoles } = await supabase
+          .from('user_roles')
+          .select('user_id')
+          .eq('role', 'admin');
+
+        const adminIds = new Set((adminRoles || []).map(r => r.user_id));
+
+        // Build progress map
+        const progressMap = new Map(
+          (progress || []).map(p => [p.user_id, p])
+        );
+
+        // Merge profiles with progress, excluding admins
+        const merged: RealStudent[] = (profiles || [])
+          .filter(p => !adminIds.has(p.user_id))
+          .map(p => {
+            const sp = progressMap.get(p.user_id);
+            const prog = sp?.progress ?? 0;
+            const score = sp?.average_score ?? 0;
+            const certGen = sp?.certificate_generated ?? false;
+            const updatedAt = sp?.updated_at || p.updated_at;
+
+            return {
+              id: p.id,
+              nombre: p.full_name || p.email,
+              perfil: p.lovirtual_role,
+              progreso: prog,
+              puntuacion: score > 0 ? `${score}%` : '-%',
+              actividad: updatedAt ? new Date(updatedAt).toLocaleDateString('es-ES') : '-',
+              certificado: certGen ? 'Generado' : 'Pendiente',
+            };
+          });
+
+        setStudents(merged);
       } catch (err) {
         console.error('Error fetching admin students:', err);
       } finally {
@@ -72,56 +91,6 @@ export function useAdminStudents(level: string = 'nivel1') {
   }, []);
 
   const computed = useMemo(() => {
-    const { profiles, progress, adminIds } = allData;
-    const range = LEVEL_MODULE_RANGES[level] || LEVEL_MODULE_RANGES.nivel1;
-
-    const progressMap = new Map(progress.map(p => [p.user_id, p]));
-
-    // Build student list filtered by level
-    const students: RealStudent[] = [];
-
-    for (const p of profiles) {
-      if (adminIds.has(p.user_id)) continue;
-
-      const sp = progressMap.get(p.user_id);
-      if (!sp) continue;
-
-      const completedModules: number[] = sp.completed_modules || [];
-      const levelModules = completedModules.filter(
-        (m: number) => m >= range.min && m <= range.max
-      );
-
-      // Student belongs to this level if they have at least one completed module in range
-      if (levelModules.length === 0) continue;
-
-      // Calculate level-specific progress
-      const levelProgress = Math.round((levelModules.length / range.total) * 100);
-
-      // Calculate level-specific score from quiz_scores
-      const quizScores = sp.quiz_scores || {};
-      const levelScoreEntries = Object.entries(quizScores).filter(([key]) => {
-        const moduleId = parseInt(key);
-        return moduleId >= range.min && moduleId <= range.max;
-      });
-      const avgScore = levelScoreEntries.length > 0
-        ? Math.round(levelScoreEntries.reduce((sum, [, val]) => sum + (typeof val === 'number' ? val : 0), 0) / levelScoreEntries.length)
-        : 0;
-
-      const isComplete = levelModules.length >= range.total;
-      const updatedAt = sp.updated_at || p.updated_at;
-
-      students.push({
-        id: p.id,
-        nombre: p.full_name || p.email,
-        perfil: p.lovirtual_role,
-        progreso: levelProgress,
-        puntuacion: avgScore > 0 ? `${avgScore}%` : '-%',
-        actividad: updatedAt ? new Date(updatedAt).toLocaleDateString('es-ES') : '-',
-        certificado: isComplete ? 'Generado' : 'Pendiente',
-      });
-    }
-
-    // KPIs
     const total = students.length;
     const finalizados = students.filter(s => s.certificado === 'Generado').length;
     const pendientes = total - finalizados;
@@ -140,80 +109,13 @@ export function useAdminStudents(level: string = 'nivel1') {
       fill: COLORS[i % COLORS.length],
     }));
 
-    // Tiempo promedio por perfil (hours based on time_spent_minutes)
-    const timeByProfile: Record<string, { total: number; count: number }> = {};
-    // Error rate by profile (from quiz_scores: incorrect = score < 70)
-    const errorByProfile: Record<string, { totalQuizzes: number; failedQuizzes: number }> = {};
-    // Score averages by profile
-    const scoreByProfile: Record<string, { total: number; count: number }> = {};
-
-    for (const p of profiles) {
-      if (adminIds.has(p.user_id)) continue;
-      const sp = progressMap.get(p.user_id);
-      if (!sp) continue;
-
-      const label = PROFILE_LABELS[p.lovirtual_role] || p.lovirtual_role;
-
-      // Time
-      const mins = sp.time_spent_minutes || 0;
-      if (mins > 0) {
-        if (!timeByProfile[label]) timeByProfile[label] = { total: 0, count: 0 };
-        timeByProfile[label].total += mins;
-        timeByProfile[label].count += 1;
-      }
-
-      // Quiz scores for this level
-      const quizScores = sp.quiz_scores || {};
-      const levelScores = Object.entries(quizScores).filter(([key]) => {
-        const mid = parseInt(key);
-        return mid >= range.min && mid <= range.max;
-      });
-
-      if (levelScores.length > 0) {
-        if (!errorByProfile[label]) errorByProfile[label] = { totalQuizzes: 0, failedQuizzes: 0 };
-        if (!scoreByProfile[label]) scoreByProfile[label] = { total: 0, count: 0 };
-
-        for (const [, val] of levelScores) {
-          const score = typeof val === 'number' ? val : 0;
-          errorByProfile[label].totalQuizzes += 1;
-          if (score < 70) errorByProfile[label].failedQuizzes += 1;
-          scoreByProfile[label].total += score;
-          scoreByProfile[label].count += 1;
-        }
-      }
-    }
-
-    const tiempoPromedio = Object.entries(timeByProfile)
-      .map(([perfil, { total, count }]) => ({
-        perfil,
-        horas: Math.round((total / count / 60) * 10) / 10,
-      }))
-      .sort((a, b) => b.horas - a.horas);
-
-    const errores = Object.entries(errorByProfile)
-      .map(([perfil, { totalQuizzes, failedQuizzes }]) => ({
-        perfil,
-        tasa: totalQuizzes > 0 ? `${Math.round((failedQuizzes / totalQuizzes) * 100)}%` : '0%',
-      }))
-      .sort((a, b) => parseFloat(b.tasa) - parseFloat(a.tasa));
-
-    const puntuacionPromedio = Object.entries(scoreByProfile)
-      .map(([perfil, { total, count }]) => ({
-        perfil,
-        puntuacion: Math.round((total / count) * 10) / 10,
-      }))
-      .sort((a, b) => b.puntuacion - a.puntuacion);
-
     return {
       kpis: { inscritos: total, finalizados, tasa, pendientes },
       distribucion,
-      tiempoPromedio,
-      puntuacionPromedio,
-      errores,
       estudiantes: students,
       loading,
     };
-  }, [allData, level, loading]);
+  }, [students, loading]);
 
   return computed;
 }

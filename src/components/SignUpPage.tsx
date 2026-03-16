@@ -121,15 +121,13 @@ const SignUpPage: React.FC = () => {
                     </div>
                     <div>
                       <label className="text-sm font-medium text-foreground mb-1 block">Rol en LoVirtual</label>
-                      <Select value={role} onValueChange={(v) => { if (v) setRole(v as LovirtualRole); }} disabled={isLoading}>
+                      <Select value={role} onValueChange={(v) => setRole(v as LovirtualRole)} disabled={isLoading}>
                         <SelectTrigger className="h-11 bg-card">
-                          <SelectValue placeholder="Selecciona un rol" />
+                          <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="z-[9999]">
-                          {roleLabels && Object.entries(roleLabels)?.map(([value, label]) => (
-                            value && label ? (
-                              <SelectItem key={value} value={String(value)}>{String(label)}</SelectItem>
-                            ) : null
+                        <SelectContent>
+                          {(Object.entries(roleLabels) as [LovirtualRole, string][]).map(([value, label]) => (
+                            <SelectItem key={value} value={value}>{label}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
