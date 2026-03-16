@@ -12,7 +12,7 @@ import { toast } from '@/hooks/use-toast';
 const Level3Accordion: React.FC = () => {
   const { user, studentProgress, completeModule, markCertificateGenerated } = useAuth();
   const [assignments, setAssignments] = useState<Record<number, { id: string; file_name: string; file_path: string; status: string; grade: number | null; feedback: string | null }>>({});
-  const [showCertificate, setShowCertificate] = useState<{ avg: number } | null>(null);
+  const [showCertificate, setShowCertificate] = useState<{ totalScore: number; avg: number } | null>(null);
 
   const completedModules = studentProgress?.completed_modules ?? [];
 
