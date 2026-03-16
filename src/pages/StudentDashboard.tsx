@@ -203,7 +203,7 @@ const StudentDashboard: React.FC = () => {
               </div>
               <div>
                 <h3 className="font-bold text-foreground">Nivel 1: Fundamentos de IA</h3>
-                <p className="text-sm text-muted-foreground">{completedModules}/{totalModules} módulos completados</p>
+                <p className="text-sm text-muted-foreground">{level1CompletedCount}/{totalModules} módulos completados</p>
               </div>
             </div>
             <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform duration-200 ${level1Open ? 'rotate-180' : ''}`} />
