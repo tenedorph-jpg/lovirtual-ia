@@ -11,8 +11,13 @@ interface QuizQuestion {
 }
 
 interface EvaluationRequest {
-  questions: QuizQuestion[];
-  selectedAnswers: Record<number, number>;
+  // Multiple choice (final exam)
+  questions?: QuizQuestion[];
+  selectedAnswers?: Record<number, number>;
+  // Open-ended (module 10 evaluation)
+  caseStudy?: string;
+  studentResponse?: string;
+  // Common
   studentName: string;
   examType: "final" | "module10";
   moduleTitle?: string;
@@ -32,36 +37,71 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { questions, selectedAnswers, studentName, examType, moduleTitle }: EvaluationRequest =
+    const { questions, selectedAnswers, caseStudy, studentResponse, studentName, examType, moduleTitle }: EvaluationRequest =
       await req.json();
 
-    // Build the Q&A summary for Claude
-    let correctCount = 0;
-    const questionsSummary = questions.map((q, i) => {
-      const studentAnswerIndex = selectedAnswers[q.id];
-      const studentAnswer = q.options[studentAnswerIndex] ?? "No respondida";
-      const correctAnswer = q.options[q.correctAnswer];
-      const isCorrect = studentAnswerIndex === q.correctAnswer;
-      if (isCorrect) correctCount++;
+    let prompt: string;
+    let rawScore: number;
 
-      return `Pregunta ${i + 1}: ${q.question}
+    if (examType === "module10" && caseStudy && studentResponse) {
+      // Open-ended evaluation: Module 10 case study
+      rawScore = 0; // Claude will assign the score
+      prompt = `Eres el evaluador académico de la Academia LoVirtual, especializada en formación de IA para profesionales latinoamericanos.
+
+Debes evaluar la respuesta de ${studentName} al siguiente caso práctico del Módulo 10.
+
+CASO PRÁCTICO:
+${caseStudy}
+
+RESPUESTA DEL ESTUDIANTE:
+${studentResponse}
+
+CRITERIOS DE EVALUACIÓN (puntúa del 0 al 100):
+1. Claridad del rol asignado a la IA (¿define quién es la IA?)
+2. Contexto suficiente (¿explica la situación con detalle?)
+3. Tono de voz solicitado (¿especifica cómo debe sonar el texto?)
+4. Objetivo claro (¿qué debe lograr exactamente el correo/texto?)
+5. Restricciones útiles (¿longitud, formato, qué evitar?)
+
+Umbral de aprobación: 70 puntos.
+
+Responde ÚNICAMENTE con este JSON (sin markdown, sin texto extra):
+{
+  "approved": true/false,
+  "score": número del 0 al 100,
+  "verdict": "APROBADO" o "NO APROBADO",
+  "feedback": "feedback personalizado y motivador para ${studentName}, máximo 3 oraciones",
+  "details": ["fortaleza o área de mejora 1", "fortaleza o área de mejora 2"]
+}`;
+    } else {
+      // Multiple choice evaluation: final exam
+      const qs = questions ?? [];
+      const sa = selectedAnswers ?? {};
+
+      let correctCount = 0;
+      const questionsSummary = qs.map((q, i) => {
+        const studentAnswerIndex = sa[q.id];
+        const studentAnswer = q.options[studentAnswerIndex] ?? "No respondida";
+        const correctAnswer = q.options[q.correctAnswer];
+        const isCorrect = studentAnswerIndex === q.correctAnswer;
+        if (isCorrect) correctCount++;
+
+        return `Pregunta ${i + 1}: ${q.question}
   Respuesta del estudiante: ${String.fromCharCode(65 + studentAnswerIndex)}. ${studentAnswer} ${isCorrect ? "✓ CORRECTA" : "✗ INCORRECTA"}
   ${!isCorrect ? `Respuesta correcta: ${String.fromCharCode(65 + q.correctAnswer)}. ${correctAnswer}` : ""}`;
-    }).join("\n\n");
+      }).join("\n\n");
 
-    const rawScore = Math.round((correctCount / questions.length) * 100);
-    const examName = examType === "final"
-      ? "Examen Final del curso de Inteligencia Artificial y Herramientas Digitales"
-      : `Quiz del Módulo 10: ${moduleTitle ?? "Lógica e Iteración"} - Lovable Avanzado`;
+      rawScore = Math.round((correctCount / qs.length) * 100);
+      const examName = "Examen Final del curso de Inteligencia Artificial y Herramientas Digitales";
 
-    const prompt = `Eres el evaluador académico de la Academia LoVirtual, especializada en formación de IA para profesionales latinoamericanos.
+      prompt = `Eres el evaluador académico de la Academia LoVirtual, especializada en formación de IA para profesionales latinoamericanos.
 
 Debes revisar el siguiente ${examName} completado por ${studentName}.
 
 RESULTADOS:
 ${questionsSummary}
 
-Puntaje bruto: ${correctCount}/${questions.length} (${rawScore}%)
+Puntaje bruto: ${correctCount}/${qs.length} (${rawScore}%)
 Umbral de aprobación: 70%
 
 INSTRUCCIONES:
@@ -79,6 +119,7 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto extra):
   "feedback": "mensaje personalizado para ${studentName}",
   "details": ["punto 1", "punto 2"]
 }`;
+    }
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -88,7 +129,7 @@ Responde ÚNICAMENTE con este JSON (sin markdown, sin texto extra):
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
+        model: "claude-sonnet-4-6",
         max_tokens: 512,
         messages: [{ role: "user", content: prompt }],
       }),
