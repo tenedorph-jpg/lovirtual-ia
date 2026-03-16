@@ -2,6 +2,12 @@ import { jsPDF } from 'jspdf';
 
 const COURSE_NAME = 'Inteligencia Artificial y Herramientas Digitales: De Usuario a Creador';
 
+const LEVEL_INFO: Record<string, { title: string; subtitle: string; scoreLabel: string }> = {
+  level1: { title: 'CERTIFICADO', subtitle: 'D E   F I N A L I Z A C I Ó N', scoreLabel: 'Calificación obtenida' },
+  level2: { title: 'CERTIFICADO', subtitle: 'D E   F I N A L I Z A C I Ó N', scoreLabel: 'Calificación obtenida' },
+  level3: { title: 'CERTIFICADO', subtitle: 'N I V E L   3  —  D O M I N I O   P R Á C T I C O', scoreLabel: 'Calificación Final (suma de 10 módulos)' },
+};
+
 function drawCornerDiamond(pdf: any, x: number, y: number, size: number) {
   pdf.setFillColor(184, 152, 61);
   pdf.lines([[size, -size], [size, size], [-size, size], [-size, -size]], x, y, [1, 1], 'F', true);
