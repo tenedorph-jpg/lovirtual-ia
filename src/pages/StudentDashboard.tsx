@@ -24,6 +24,7 @@ const StudentDashboard: React.FC = () => {
 
   const [level1Open, setLevel1Open] = useState(false);
   const [level2Open, setLevel2Open] = useState(false);
+  const [level3Open, setLevel3Open] = useState(false);
 
   if (!currentStudent) {
     navigate('/');
