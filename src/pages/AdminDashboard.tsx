@@ -335,12 +335,16 @@ const AdminDashboard: React.FC = () => {
   const [createdInfo, setCreatedInfo] = useState<{ email: string; password: string } | null>(null);
   const [copiedPwd, setCopiedPwd] = useState(false);
 
-  // Both levels now use real data filtered by level
+  // Merge real data with mock fallbacks
+  const mockFallback = activeCourse === 'nivel1' ? cursosData.nivel1 : activeCourse === 'nivel2' ? cursosData.nivel2 : cursosData.nivel2;
   const courseData = {
-    ...(activeCourse === 'nivel1' ? cursosData.nivel1 : activeCourse === 'nivel2' ? cursosData.nivel2 : cursosData.nivel2),
+    ...mockFallback,
     kpis: realData.kpis,
     distribucion: realData.distribucion,
     estudiantes: realData.estudiantes,
+    tiempoPromedio: realData.tiempoPromedio.length > 0 ? realData.tiempoPromedio : mockFallback.tiempoPromedio,
+    puntuacionPromedio: realData.puntuacionPromedio.length > 0 ? realData.puntuacionPromedio : mockFallback.puntuacionPromedio,
+    errores: realData.errores.length > 0 ? realData.errores : mockFallback.errores,
   };
 
   const handleLogout = () => { logout(); navigate('/'); };

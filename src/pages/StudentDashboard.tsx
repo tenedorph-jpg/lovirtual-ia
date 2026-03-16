@@ -256,21 +256,23 @@ const StudentDashboard: React.FC = () => {
         {/* Nivel 2 — collapsible */}
         <div className="mb-4">
           <button
-            onClick={() => setLevel2Open(o => !o)}
-            className="w-full flex items-center justify-between bg-card border border-border rounded-xl px-5 py-4 hover:border-primary/50 transition-colors"
+            onClick={() => level2Unlocked && setLevel2Open(o => !o)}
+            className={`w-full flex items-center justify-between bg-card border border-border rounded-xl px-5 py-4 transition-colors ${level2Unlocked ? 'hover:border-primary/50 cursor-pointer' : 'opacity-60 cursor-not-allowed'}`}
           >
             <div className="flex items-center gap-4 text-left">
-              <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground font-bold text-sm flex-shrink-0">
-                N2
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0 ${level2Unlocked ? 'lovirtual-gradient-bg text-white' : 'bg-muted text-muted-foreground'}`}>
+                {level2Unlocked ? 'N2' : <Lock className="w-4 h-4" />}
               </div>
               <div>
                 <h3 className="font-bold text-foreground">Nivel 2: Implementación y Automatización</h3>
-                <p className="text-sm text-muted-foreground">Continúa tu ruta de aprendizaje con módulos avanzados</p>
+                <p className="text-sm text-muted-foreground">
+                  {level2Unlocked ? 'Continúa tu ruta de aprendizaje con módulos avanzados' : 'Completa el Nivel 1 y aprueba su examen final para desbloquear'}
+                </p>
               </div>
             </div>
             <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform duration-200 ${level2Open ? 'rotate-180' : ''}`} />
           </button>
-          {level2Open && (
+          {level2Open && level2Unlocked && (
             <div className="mt-3 lovirtual-card flex flex-col md:flex-row md:items-center justify-between gap-4">
               <p className="text-muted-foreground text-sm">Accede a los módulos avanzados de Nivel 2 y continúa tu formación en IA.</p>
               <Button onClick={() => navigate('/level-2')} className="lovirtual-gradient-bg text-white gap-2 flex-shrink-0">
@@ -284,21 +286,23 @@ const StudentDashboard: React.FC = () => {
         {/* Nivel 3 — collapsible */}
         <div className="mb-8">
           <button
-            onClick={() => setLevel3Open(o => !o)}
-            className="w-full flex items-center justify-between bg-card border border-border rounded-xl px-5 py-4 hover:border-primary/50 transition-colors"
+            onClick={() => level3Unlocked && setLevel3Open(o => !o)}
+            className={`w-full flex items-center justify-between bg-card border border-border rounded-xl px-5 py-4 transition-colors ${level3Unlocked ? 'hover:border-primary/50 cursor-pointer' : 'opacity-60 cursor-not-allowed'}`}
           >
             <div className="flex items-center gap-4 text-left">
-              <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground font-bold text-sm flex-shrink-0">
-                N3
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0 ${level3Unlocked ? 'lovirtual-gradient-bg text-white' : 'bg-muted text-muted-foreground'}`}>
+                {level3Unlocked ? 'N3' : <Lock className="w-4 h-4" />}
               </div>
               <div>
                 <h3 className="font-bold text-foreground">Nivel 3: Dominio Práctico y Entregables con IA</h3>
-                <p className="text-sm text-muted-foreground">100% práctico — sube tus entregables para cada módulo</p>
+                <p className="text-sm text-muted-foreground">
+                  {level3Unlocked ? '100% práctico — sube tus entregables para cada módulo' : 'Completa los 10 módulos del Nivel 2 para desbloquear'}
+                </p>
               </div>
             </div>
             <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform duration-200 ${level3Open ? 'rotate-180' : ''}`} />
           </button>
-          {level3Open && (
+          {level3Open && level3Unlocked && (
             <div className="mt-3 space-y-3">
               <div className="lovirtual-card flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <p className="text-muted-foreground text-sm">Sube tus proyectos prácticos y demuestra tu dominio de herramientas de IA.</p>
