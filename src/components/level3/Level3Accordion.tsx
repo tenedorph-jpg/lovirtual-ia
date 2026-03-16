@@ -90,13 +90,17 @@ const Level3Accordion: React.FC = () => {
           <div className="flex items-center gap-3 mb-3">
             <Award className="w-8 h-8 text-success" />
             <div>
-              <h3 className="text-lg font-bold text-foreground">🎓 ¡Nivel 3 Completado!</h3>
+              <h3 className="text-lg font-bold text-foreground">🎓 ¡Felicidades! Nivel 3 Completado</h3>
               <p className="text-sm text-muted-foreground">
-                Promedio final: <span className="font-bold text-success">{showCertificate.avg}/10</span>
+                Calificación Final: <span className="font-bold text-success text-lg">{showCertificate.totalScore}/100</span>
+                <span className="ml-2 text-xs">(Promedio: {showCertificate.avg}/10)</span>
               </p>
             </div>
           </div>
-          <Button onClick={handleGenerateCertificate} className="gap-2">
+          <p className="text-sm text-muted-foreground mb-4">
+            Has completado todos los módulos del Nivel 3: Dominio Práctico con una calificación aprobatoria. ¡Descarga tu certificado!
+          </p>
+          <Button onClick={handleGenerateCertificate} className="gap-2 lovirtual-gradient-bg text-white">
             <Award className="w-4 h-4" />
             Descargar Certificado Nivel 3
           </Button>

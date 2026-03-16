@@ -207,6 +207,7 @@ Responde ÚNICAMENTE con este JSON (sin markdown):
       .lte("module_id", 210)
       .eq("status", "graded");
 
+    let totalScore: number | null = null;
     let averageGrade: number | null = null;
     let certificateEligible = false;
 
@@ -214,13 +215,16 @@ Responde ÚNICAMENTE con este JSON (sin markdown):
       const allPassed = allAssignments.every((a) => (a.grade || 0) >= 7);
       if (allPassed) {
         const total = allAssignments.reduce((sum, a) => sum + (a.grade || 0), 0);
+        totalScore = total; // Sum out of 100
         averageGrade = Math.round((total / 10) * 10) / 10;
         certificateEligible = true;
 
+        // Save total score (sum of 10 grades = X/100) to student_progress
         await supabase
           .from("student_progress")
           .update({
-            final_exam_score: Math.round(averageGrade * 10),
+            final_exam_score: totalScore,
+            certificate_generated: false, // Will be set true when student downloads
           })
           .eq("user_id", assignment.user_id);
       }
@@ -231,6 +235,7 @@ Responde ÚNICAMENTE con este JSON (sin markdown):
         grade: evaluation.grade,
         feedback: evaluation.feedback,
         allGraded: allAssignments?.length === 10,
+        totalScore,
         averageGrade,
         certificateEligible,
       }),
