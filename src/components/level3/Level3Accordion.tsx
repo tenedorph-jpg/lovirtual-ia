@@ -22,9 +22,9 @@ const Level3Accordion: React.FC = () => {
       .lte('module_id', 210);
 
     if (data) {
-      const map: Record<number, { id: string; file_name: string; file_path: string; status: string }> = {};
+      const map: Record<number, { id: string; file_name: string; file_path: string; status: string; grade: number | null; feedback: string | null }> = {};
       data.forEach(a => {
-        map[a.module_id] = { id: a.id, file_name: a.file_name, file_path: a.file_path, status: a.status };
+        map[a.module_id] = { id: a.id, file_name: a.file_name, file_path: a.file_path, status: a.status, grade: a.grade, feedback: a.feedback };
       });
       setAssignments(map);
     }
