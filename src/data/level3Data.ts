@@ -7,7 +7,7 @@ export interface Level3Module {
   acceptedFormats: string;
 }
 
-const STANDARD_FORMATS = ".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.mp3,.wav,.mp4,.mov,.zip,.rar";
+const STANDARD_FORMATS = ".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.mp3,.wav,.mp4,.mov,.zip,.rar,.jpg,.jpeg,.png";
 
 export const level3Modules: Level3Module[] = [
   {
