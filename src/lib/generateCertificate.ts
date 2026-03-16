@@ -143,10 +143,10 @@ export async function generateCertificatePDF(studentName: string, score: number,
   (pdf as any).setFont('helvetica', 'normal');
   pdf.setFontSize(9);
   pdf.setTextColor(130, 130, 130);
-  pdf.text('Calificación obtenida: ', w / 2 - 8, 127, { align: 'right' });
+  pdf.text(`${info.scoreLabel}: `, w / 2 - 8, 127, { align: 'right' });
   (pdf as any).setFont('helvetica', 'bold');
   pdf.setTextColor(201, 162, 39);
-  pdf.text(`${score}%`, w / 2 - 7, 127, { align: 'left' });
+  pdf.text(`${score}/100`, w / 2 - 7, 127, { align: 'left' });
 
   pdf.setDrawColor(200, 200, 200);
   (pdf as any).setLineWidth(0.3);

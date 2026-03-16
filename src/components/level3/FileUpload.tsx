@@ -16,6 +16,7 @@ export interface EvaluationResult {
   grade: number;
   feedback: string;
   allGraded: boolean;
+  totalScore: number | null;
   averageGrade: number | null;
   certificateEligible: boolean;
 }
