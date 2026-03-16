@@ -8,7 +8,7 @@ import { level3Modules } from '@/data/level3Data';
 
 const Level3Accordion: React.FC = () => {
   const { user, studentProgress, completeModule } = useAuth();
-  const [assignments, setAssignments] = useState<Record<number, { file_name: string; status: string }>>({});
+  const [assignments, setAssignments] = useState<Record<number, { id: string; file_name: string; file_path: string; status: string }>>({});
 
   const completedModules = studentProgress?.completed_modules ?? [];
 
@@ -16,15 +16,15 @@ const Level3Accordion: React.FC = () => {
     if (!user) return;
     const { data } = await supabase
       .from('assignments')
-      .select('module_id, file_name, status')
+      .select('id, module_id, file_name, file_path, status')
       .eq('user_id', user.id)
       .gte('module_id', 201)
       .lte('module_id', 210);
 
     if (data) {
-      const map: Record<number, { file_name: string; status: string }> = {};
+      const map: Record<number, { id: string; file_name: string; file_path: string; status: string }> = {};
       data.forEach(a => {
-        map[a.module_id] = { file_name: a.file_name, status: a.status };
+        map[a.module_id] = { id: a.id, file_name: a.file_name, file_path: a.file_path, status: a.status };
       });
       setAssignments(map);
     }
