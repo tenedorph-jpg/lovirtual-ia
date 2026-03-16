@@ -61,12 +61,15 @@ const StudentDashboard: React.FC = () => {
     navigate('/');
   };
 
-  const completedModules = currentStudent.completedModules.length;
+  const completedModulesTotal = currentStudent.completedModules.length;
   const totalModules = courseModules.length;
-  const allModulesCompleted = completedModules === totalModules;
+  
+  // Level 1 specific: count only modules 1-10
+  const level1CompletedCount = currentStudent.completedModules.filter(id => id >= 1 && id <= 10).length;
+  const allLevel1ModulesCompleted = level1CompletedCount >= totalModules;
 
   // Level unlock logic
-  const level1Completed = currentStudent.completedModules.filter(id => id >= 1 && id <= 10).length >= 10 && (currentStudent.finalExamScore ?? 0) >= 70;
+  const level1Completed = level1CompletedCount >= 10 && (currentStudent.finalExamScore ?? 0) >= 70;
   // Level 2 is completed if all 10 modules (101-110) are in completed_modules OR quiz_scores
   const level2ModulesCompleted = currentStudent.completedModules.filter(id => id >= 101 && id <= 110).length >= 10;
   const level2QuizzesDone = Object.keys(currentStudent.quizScores).filter(k => Number(k) >= 101 && Number(k) <= 110).length >= 10;
@@ -145,7 +148,7 @@ const StudentDashboard: React.FC = () => {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Módulos Completados</p>
-                <p className="text-2xl font-bold text-foreground">{completedModules}/{totalModules}</p>
+                <p className="text-2xl font-bold text-foreground">{completedModulesTotal}/{totalModules}</p>
               </div>
             </div>
           </div>
@@ -200,7 +203,7 @@ const StudentDashboard: React.FC = () => {
               </div>
               <div>
                 <h3 className="font-bold text-foreground">Nivel 1: Fundamentos de IA</h3>
-                <p className="text-sm text-muted-foreground">{completedModules}/{totalModules} módulos completados</p>
+                <p className="text-sm text-muted-foreground">{level1CompletedCount}/{totalModules} módulos completados</p>
               </div>
             </div>
             <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform duration-200 ${level1Open ? 'rotate-180' : ''}`} />
@@ -227,11 +230,11 @@ const StudentDashboard: React.FC = () => {
                   </div>
                   <Button
                     size="lg"
-                    disabled={!allModulesCompleted}
+                    disabled={!allLevel1ModulesCompleted}
                     onClick={() => navigate('/final-exam')}
-                    className={allModulesCompleted ? 'lovirtual-gradient-bg text-white animate-pulse-glow' : ''}
+                    className={allLevel1ModulesCompleted ? 'lovirtual-gradient-bg text-white animate-pulse-glow' : ''}
                   >
-                    {allModulesCompleted ? (
+                    {allLevel1ModulesCompleted ? (
                       currentStudent.certificateGenerated ? (
                         <>
                           <Award className="w-5 h-5 mr-2" />
@@ -246,7 +249,7 @@ const StudentDashboard: React.FC = () => {
                     ) : (
                       <>
                         <Lock className="w-5 h-5 mr-2" />
-                        {completedModules}/{totalModules} Módulos
+                        {level1CompletedCount}/{totalModules} Módulos
                       </>
                     )}
                   </Button>
