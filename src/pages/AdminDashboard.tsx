@@ -408,14 +408,18 @@ const AdminDashboard: React.FC = () => {
       <main className="container mx-auto px-4 py-8">
         {/* Course Tabs */}
         <Tabs value={activeCourse} onValueChange={setActiveCourse} className="mb-8">
-          <TabsList className="grid w-full max-w-lg grid-cols-2 mx-auto">
+          <TabsList className="grid w-full max-w-2xl grid-cols-3 mx-auto">
             <TabsTrigger value="nivel1" className="gap-2 text-sm">
               <BookOpen className="w-4 h-4" />
-              Nivel 1: Fundamentos de IA
+              Nivel 1: Fundamentos
             </TabsTrigger>
             <TabsTrigger value="nivel2" className="gap-2 text-sm">
               <BookOpen className="w-4 h-4" />
               Nivel 2: Implementación
+            </TabsTrigger>
+            <TabsTrigger value="nivel3" className="gap-2 text-sm">
+              <BookOpen className="w-4 h-4" />
+              Nivel 3: Portafolio
             </TabsTrigger>
           </TabsList>
         </Tabs>
