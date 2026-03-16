@@ -142,7 +142,8 @@ export async function generateCertificatePDF(studentName: string, score: number,
   (pdf as any).setFont('helvetica', 'bold');
   pdf.setFontSize(10);
   pdf.setTextColor(1, 80, 125);
-  pdf.text(COURSE_NAME, w / 2, 115.5, { align: 'center' });
+  const courseName = LEVEL_COURSE_NAMES[level] || LEVEL_COURSE_NAMES.level1;
+  pdf.text(courseName, w / 2, 115.5, { align: 'center' });
 
   (pdf as any).setFont('helvetica', 'normal');
   pdf.setFontSize(9);

@@ -128,14 +128,39 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // Handle token refresh failures and sign-out events
+      if (event === 'TOKEN_REFRESHED' && !session) {
+        // Token refresh failed — clear stale data
+        console.warn('Session token refresh failed, clearing local state');
+        localStorage.removeItem('sb-' + import.meta.env.VITE_SUPABASE_PROJECT_ID + '-auth-token');
+        setUser(null);
+        setProfile(null);
+        setStudentProgress(null);
+        setIsAdmin(false);
+        setLoading(false);
+        return;
+      }
+      if (event === 'SIGNED_OUT') {
+        setUser(null);
+        setProfile(null);
+        setStudentProgress(null);
+        setIsAdmin(false);
+        setLoading(false);
+        return;
+      }
       if (session?.user) {
         setUser(session.user);
-        // Use setTimeout to avoid Supabase deadlock
         setTimeout(async () => {
-          await fetchProfile(session.user.id);
-          await fetchProgress(session.user.id);
-          const admin = await checkAdmin(session.user.id);
-          if (admin) await fetchAllForAdmin();
+          try {
+            await fetchProfile(session.user.id);
+            await fetchProgress(session.user.id);
+            const admin = await checkAdmin(session.user.id);
+            if (admin) await fetchAllForAdmin();
+          } catch (err) {
+            console.error('Error loading user data, clearing session:', err);
+            localStorage.removeItem('sb-' + import.meta.env.VITE_SUPABASE_PROJECT_ID + '-auth-token');
+            await supabase.auth.signOut();
+          }
           setLoading(false);
         }, 0);
       } else {
@@ -150,10 +175,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
         setUser(session.user);
-        await fetchProfile(session.user.id);
-        await fetchProgress(session.user.id);
-        const admin = await checkAdmin(session.user.id);
-        if (admin) await fetchAllForAdmin();
+        try {
+          await fetchProfile(session.user.id);
+          await fetchProgress(session.user.id);
+          const admin = await checkAdmin(session.user.id);
+          if (admin) await fetchAllForAdmin();
+        } catch (err) {
+          console.error('Error loading initial session data:', err);
+          localStorage.removeItem('sb-' + import.meta.env.VITE_SUPABASE_PROJECT_ID + '-auth-token');
+          await supabase.auth.signOut();
+        }
       }
       setLoading(false);
     });
