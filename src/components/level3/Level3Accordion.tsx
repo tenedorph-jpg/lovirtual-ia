@@ -65,11 +65,11 @@ const Level3Accordion: React.FC = () => {
     await completeModule(moduleId);
     await fetchAssignments();
 
-    if (result?.certificateEligible && result.averageGrade) {
-      setShowCertificate({ avg: result.averageGrade });
+    if (result?.certificateEligible && result.totalScore) {
+      setShowCertificate({ totalScore: result.totalScore, avg: result.averageGrade || result.totalScore / 10 });
       toast({
         title: '🎓 ¡Felicitaciones!',
-        description: `Has completado el Nivel 3 con un promedio de ${result.averageGrade}/10. ¡Tu certificado está listo!`,
+        description: `Has completado el Nivel 3 con una calificación de ${result.totalScore}/100. ¡Tu certificado está listo!`,
       });
     }
   };
