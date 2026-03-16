@@ -337,7 +337,7 @@ const AdminDashboard: React.FC = () => {
 
   // Both levels now use real data filtered by level
   const courseData = {
-    ...(activeCourse === 'nivel1' ? cursosData.nivel1 : cursosData.nivel2),
+    ...(activeCourse === 'nivel1' ? cursosData.nivel1 : activeCourse === 'nivel2' ? cursosData.nivel2 : cursosData.nivel2),
     kpis: realData.kpis,
     distribucion: realData.distribucion,
     estudiantes: realData.estudiantes,
