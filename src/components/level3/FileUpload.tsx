@@ -251,7 +251,6 @@ const FileUpload: React.FC<FileUploadProps> = ({ moduleId, acceptedFormats, onUp
       <input
         ref={inputRef}
         type="file"
-        accept={acceptedFormats}
         className="hidden"
         onChange={(e) => {
           const file = e.target.files?.[0];
