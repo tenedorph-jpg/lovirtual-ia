@@ -121,14 +121,40 @@ const FileUpload: React.FC<FileUploadProps> = ({ moduleId, acceptedFormats, onUp
   };
 
   if (existingFile) {
+    const isGraded = existingFile.status === 'graded';
+    const passed = isGraded && existingFile.grade != null && existingFile.grade >= 6;
+
+    if (isGraded) {
+      return (
+        <div className={`p-4 rounded-xl border ${passed ? 'bg-success/5 border-success/30' : 'bg-destructive/5 border-destructive/30'}`}>
+          <div className="flex items-center gap-3 mb-3">
+            <CheckCircle className={`w-6 h-6 flex-shrink-0 ${passed ? 'text-success' : 'text-destructive'}`} />
+            <div className="min-w-0 flex-1">
+              <p className="font-medium text-foreground truncate">{existingFile.file_name}</p>
+              <p className={`text-sm font-semibold ${passed ? 'text-success' : 'text-destructive'}`}>
+                Calificación: {existingFile.grade}/10 — {passed ? 'Aprobado' : 'Reprobado'}
+              </p>
+            </div>
+          </div>
+          {existingFile.feedback && (
+            <div className="bg-background rounded-lg p-3 border border-border">
+              <div className="flex items-center gap-1.5 mb-1">
+                <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
+                <span className="text-xs font-medium text-muted-foreground">Feedback del evaluador</span>
+              </div>
+              <p className="text-sm text-foreground">{existingFile.feedback}</p>
+            </div>
+          )}
+        </div>
+      );
+    }
+
     return (
       <div className="flex items-center gap-3 p-4 rounded-xl bg-primary/5 border border-primary/20">
         <FileCheck className="w-6 h-6 text-primary flex-shrink-0" />
         <div className="min-w-0 flex-1">
           <p className="font-medium text-foreground truncate">{existingFile.file_name}</p>
-          <p className="text-sm text-muted-foreground capitalize">
-            Estado: {existingFile.status === 'submitted' ? 'Enviado' : existingFile.status === 'graded' ? 'Calificado' : existingFile.status}
-          </p>
+          <p className="text-sm text-muted-foreground">Estado: Enviado — Pendiente de evaluación</p>
         </div>
         <Button
           variant="ghost"
