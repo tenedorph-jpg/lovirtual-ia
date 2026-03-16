@@ -28,7 +28,7 @@ const imgToDataUrl = (src: string): Promise<string> =>
     img.src = src;
   });
 
-export async function generateCertificatePDF(studentName: string, score: number): Promise<void> {
+export async function generateCertificatePDF(studentName: string, score: number, level: string = 'level1'): Promise<void> {
   const [firmaDataUrl, selloDataUrl] = await Promise.all([
     imgToDataUrl('/firma.png'),
     imgToDataUrl('/sello.jpeg'),
