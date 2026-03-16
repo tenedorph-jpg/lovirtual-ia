@@ -9,7 +9,7 @@ interface FileUploadProps {
   moduleId: number;
   acceptedFormats: string;
   onUploadSuccess: () => void;
-  existingFile?: { id: string; file_name: string; file_path: string; status: string } | null;
+  existingFile?: { id: string; file_name: string; file_path: string; status: string; grade?: number | null; feedback?: string | null } | null;
 }
 
 const MAX_SIZE = 100 * 1024 * 1024; // 100MB
