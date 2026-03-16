@@ -293,12 +293,44 @@ const StudentDashboard: React.FC = () => {
             <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform duration-200 ${level3Open ? 'rotate-180' : ''}`} />
           </button>
           {level3Open && (
-            <div className="mt-3 lovirtual-card flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <p className="text-muted-foreground text-sm">Sube tus proyectos prácticos y demuestra tu dominio de herramientas de IA.</p>
-              <Button onClick={() => navigate('/level-3')} className="lovirtual-gradient-bg text-white gap-2 flex-shrink-0">
-                <Sparkles className="w-4 h-4" />
-                Ver Entregables
-              </Button>
+            <div className="mt-3 space-y-3">
+              <div className="lovirtual-card flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <p className="text-muted-foreground text-sm">Sube tus proyectos prácticos y demuestra tu dominio de herramientas de IA.</p>
+                <Button onClick={() => navigate('/level-3')} className="lovirtual-gradient-bg text-white gap-2 flex-shrink-0">
+                  <Sparkles className="w-4 h-4" />
+                  Ver Entregables
+                </Button>
+              </div>
+              {level3CertReady && (
+                <div className="lovirtual-card border-2 border-success/40 bg-success/5">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="p-4 rounded-xl bg-success/10">
+                        <Award className="w-8 h-8 text-success" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold text-foreground">🎓 Certificado Nivel 3 Disponible</h3>
+                        <p className="text-muted-foreground">
+                          Calificación Final: <span className="font-bold text-success">{level3CertReady.totalScore}/100</span>
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      size="lg"
+                      className="lovirtual-gradient-bg text-white gap-2"
+                      onClick={async () => {
+                        const name = currentStudent?.name || 'Estudiante';
+                        await generateCertificatePDF(name, level3CertReady.totalScore, 'level3');
+                        await markCertificateGenerated();
+                        toast({ title: '📄 Certificado generado', description: 'El PDF se ha descargado.' });
+                      }}
+                    >
+                      <Award className="w-5 h-5" />
+                      Descargar Certificado
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
