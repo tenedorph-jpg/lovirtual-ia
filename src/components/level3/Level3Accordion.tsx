@@ -16,7 +16,7 @@ const Level3Accordion: React.FC = () => {
     if (!user) return;
     const { data } = await supabase
       .from('assignments')
-      .select('id, module_id, file_name, file_path, status')
+      .select('id, module_id, file_name, file_path, status, grade, feedback')
       .eq('user_id', user.id)
       .gte('module_id', 201)
       .lte('module_id', 210);
