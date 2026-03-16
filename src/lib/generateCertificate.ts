@@ -1,10 +1,14 @@
 import { jsPDF } from 'jspdf';
 
-const COURSE_NAME = 'Inteligencia Artificial y Herramientas Digitales: De Usuario a Creador';
+const LEVEL_COURSE_NAMES: Record<string, string> = {
+  level1: 'Inteligencia Artificial y Herramientas Digitales: De Usuario a Creador',
+  level2: 'Implementación y Automatización con IA',
+  level3: 'Dominio Práctico y Creación de Entregables con IA',
+};
 
 const LEVEL_INFO: Record<string, { title: string; subtitle: string; scoreLabel: string }> = {
   level1: { title: 'CERTIFICADO', subtitle: 'D E   F I N A L I Z A C I Ó N', scoreLabel: 'Calificación obtenida' },
-  level2: { title: 'CERTIFICADO', subtitle: 'D E   F I N A L I Z A C I Ó N', scoreLabel: 'Calificación obtenida' },
+  level2: { title: 'CERTIFICADO', subtitle: 'D E   F I N A L I Z A C I Ó N  —  N I V E L   2', scoreLabel: 'Calificación obtenida' },
   level3: { title: 'CERTIFICADO', subtitle: 'N I V E L   3  —  D O M I N I O   P R Á C T I C O', scoreLabel: 'Calificación Final (suma de 10 módulos)' },
 };
 
