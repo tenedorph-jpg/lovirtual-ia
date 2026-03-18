@@ -1,5 +1,4 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import * as pdfjsLib from "https://esm.sh/pdfjs-dist@4.0.379/build/pdf.mjs";
 import { unzipSync } from "https://esm.sh/fflate@0.8.2";
 
 const corsHeaders = {
@@ -30,30 +29,146 @@ const IMAGE_MIME: Record<string, string> = {
   gif: "image/gif",
 };
 
-/** Extract text from a PDF ArrayBuffer using pdf.js */
-async function extractPdfText(buffer: ArrayBuffer): Promise<string> {
-  try {
-    const doc = await pdfjsLib.getDocument({ data: new Uint8Array(buffer) }).promise;
-    const pages: string[] = [];
-    const maxPages = Math.min(doc.numPages, 20);
-    for (let i = 1; i <= maxPages; i++) {
-      const page = await doc.getPage(i);
-      const content = await page.getTextContent();
-      const text = content.items.map((item: any) => item.str).join(" ");
-      pages.push(text);
-    }
-    return pages.join("\n\n");
-  } catch (e) {
-    console.error("PDF extraction error:", e);
-    return "";
-  }
-}
-
 function getFileExtension(name: string): string {
   return (name.split(".").pop() || "").toLowerCase();
 }
 
-/** Extract contents from a ZIP buffer. Returns text snippets and base64-encoded images. */
+// ============================================================
+// TEXT EXTRACTION: DOCX
+// A .docx is a ZIP containing word/document.xml with the text.
+// We unzip it with fflate, find document.xml, and strip XML tags.
+// ============================================================
+function extractDocxText(buffer: ArrayBuffer): string {
+  try {
+    const unzipped = unzipSync(new Uint8Array(buffer));
+
+    // Find the main document XML
+    let docXml: Uint8Array | null = null;
+    for (const [filename, data] of Object.entries(unzipped)) {
+      if (filename === "word/document.xml" || filename.endsWith("/document.xml")) {
+        docXml = data;
+        break;
+      }
+    }
+
+    if (!docXml) {
+      console.error("DOCX: word/document.xml not found in ZIP entries:", Object.keys(unzipped));
+      return "";
+    }
+
+    const xmlString = new TextDecoder("utf-8").decode(docXml);
+
+    // Extract text from <w:t> tags (Word paragraph text nodes)
+    const textParts: string[] = [];
+    // Match <w:t ...>content</w:t> and <w:t>content</w:t>
+    const regex = /<w:t[^>]*>([^<]*)<\/w:t>/g;
+    let match;
+    while ((match = regex.exec(xmlString)) !== null) {
+      textParts.push(match[1]);
+    }
+
+    // Also handle paragraph breaks: each <w:p> is a new paragraph
+    // Re-parse grouping by paragraphs for better readability
+    const paragraphs: string[] = [];
+    const paraRegex = /<w:p[^>]*>([\s\S]*?)<\/w:p>/g;
+    let paraMatch;
+    while ((paraMatch = paraRegex.exec(xmlString)) !== null) {
+      const paraContent = paraMatch[1];
+      const paraTexts: string[] = [];
+      const tRegex = /<w:t[^>]*>([^<]*)<\/w:t>/g;
+      let tMatch;
+      while ((tMatch = tRegex.exec(paraContent)) !== null) {
+        paraTexts.push(tMatch[1]);
+      }
+      if (paraTexts.length > 0) {
+        paragraphs.push(paraTexts.join(""));
+      }
+    }
+
+    const result = paragraphs.length > 0 ? paragraphs.join("\n") : textParts.join(" ");
+    console.log(`DOCX extraction: got ${result.length} chars from ${paragraphs.length} paragraphs`);
+    return result;
+  } catch (e) {
+    console.error("DOCX extraction error:", e);
+    return "";
+  }
+}
+
+// ============================================================
+// TEXT EXTRACTION: PDF
+// Use a lightweight approach: extract text streams from PDF.
+// Parse the raw PDF bytes looking for text content.
+// ============================================================
+function extractPdfTextRaw(buffer: ArrayBuffer): string {
+  try {
+    const bytes = new Uint8Array(buffer);
+    const raw = new TextDecoder("latin1").decode(bytes);
+
+    const textParts: string[] = [];
+
+    // Strategy 1: Extract text between BT (Begin Text) and ET (End Text) operators
+    const btEtRegex = /BT\s([\s\S]*?)ET/g;
+    let match;
+    while ((match = btEtRegex.exec(raw)) !== null) {
+      const block = match[1];
+      // Extract strings in parentheses: Tj and ' operators
+      const strRegex = /\(([^)]*)\)/g;
+      let strMatch;
+      while ((strMatch = strRegex.exec(block)) !== null) {
+        const decoded = strMatch[1]
+          .replace(/\\n/g, "\n")
+          .replace(/\\r/g, "\r")
+          .replace(/\\t/g, "\t")
+          .replace(/\\\\/g, "\\")
+          .replace(/\\([()])/g, "$1");
+        if (decoded.trim()) {
+          textParts.push(decoded);
+        }
+      }
+      // Also extract hex strings <hexdata> used with TJ
+      const hexRegex = /<([0-9A-Fa-f]+)>/g;
+      let hexMatch;
+      while ((hexMatch = hexRegex.exec(block)) !== null) {
+        const hex = hexMatch[1];
+        if (hex.length > 4) {
+          // Try to decode as UTF-16BE (common in PDFs)
+          let decoded = "";
+          for (let i = 0; i < hex.length; i += 4) {
+            const code = parseInt(hex.substring(i, i + 4), 16);
+            if (code > 31 && code < 65535) {
+              decoded += String.fromCharCode(code);
+            }
+          }
+          if (decoded.trim()) textParts.push(decoded);
+        }
+      }
+    }
+
+    // Strategy 2: Look for stream content with readable text
+    if (textParts.length === 0) {
+      // Try to find FlateDecode streams — we can't decompress without zlib, 
+      // but we can look for uncompressed text
+      const plainTextRegex = /stream\r?\n([\x20-\x7E\r\n]{50,})\r?\nendstream/g;
+      while ((match = plainTextRegex.exec(raw)) !== null) {
+        const content = match[1].trim();
+        if (content.length > 20) {
+          textParts.push(content);
+        }
+      }
+    }
+
+    const result = textParts.join(" ").replace(/\s+/g, " ").trim();
+    console.log(`PDF raw extraction: got ${result.length} chars from ${textParts.length} text parts`);
+    return result;
+  } catch (e) {
+    console.error("PDF raw extraction error:", e);
+    return "";
+  }
+}
+
+// ============================================================
+// ZIP EXTRACTION
+// ============================================================
 function extractZipContents(buffer: ArrayBuffer): {
   textSnippets: string[];
   images: { media_type: string; data: string; name: string }[];
@@ -67,14 +182,12 @@ function extractZipContents(buffer: ArrayBuffer): {
     const unzipped = unzipSync(new Uint8Array(buffer));
 
     for (const [filename, fileData] of Object.entries(unzipped)) {
-      // Skip directories and hidden/system files
       if (filename.endsWith("/") || filename.startsWith("__MACOSX") || filename.startsWith(".")) continue;
       fileList.push(filename);
 
       const ext = getFileExtension(filename);
 
       if (IMAGE_EXTENSIONS.has(ext) && images.length < 10) {
-        // Convert image to base64 for Claude vision
         const base64 = btoa(String.fromCharCode(...fileData));
         images.push({
           media_type: IMAGE_MIME[ext] || "image/png",
@@ -85,8 +198,19 @@ function extractZipContents(buffer: ArrayBuffer): {
         const text = new TextDecoder().decode(fileData);
         textSnippets.push(`--- ${filename} ---\n${text.substring(0, 2000)}`);
       } else if (ext === "pdf") {
-        // We can't easily parse PDF inside ZIP synchronously, note it
-        textSnippets.push(`[Archivo PDF encontrado dentro del ZIP: ${filename}]`);
+        const pdfText = extractPdfTextRaw(fileData.buffer);
+        if (pdfText.length > 0) {
+          textSnippets.push(`--- ${filename} (PDF) ---\n${pdfText.substring(0, 2000)}`);
+        } else {
+          textSnippets.push(`[PDF dentro del ZIP: ${filename} — no se pudo extraer texto, posible PDF escaneado]`);
+        }
+      } else if (ext === "docx") {
+        const docxText = extractDocxText(fileData.buffer);
+        if (docxText.length > 0) {
+          textSnippets.push(`--- ${filename} (DOCX) ---\n${docxText.substring(0, 2000)}`);
+        } else {
+          textSnippets.push(`[DOCX dentro del ZIP: ${filename} — no se pudo extraer texto]`);
+        }
       }
     }
   } catch (e) {
@@ -163,7 +287,6 @@ Deno.serve(async (req) => {
 
       if (fileData) {
         if (ext === "zip") {
-          // ZIP: extract contents including images
           const buffer = await fileData.arrayBuffer();
           const { textSnippets, images, fileList } = extractZipContents(buffer);
           extractedImages = images;
@@ -174,29 +297,37 @@ Deno.serve(async (req) => {
           } else {
             fileContentSnippet = `ARCHIVOS EN EL ZIP (${fileList.length} archivos):\n${fileList.join("\n")}\n\n`;
             if (textSnippets.length > 0) {
-              fileContentSnippet += `CONTENIDO DE TEXTO EXTRAÍDO:\n${textSnippets.join("\n\n").substring(0, 4000)}`;
+              fileContentSnippet += `CONTENIDO DE TEXTO EXTRAÍDO:\n${textSnippets.join("\n\n").substring(0, 6000)}`;
             }
             if (images.length > 0) {
               fileContentSnippet += `\n\n[${images.length} imagen(es) extraída(s) del ZIP y enviadas para evaluación visual]`;
             }
-            if (images.length === 0 && textSnippets.every(t => t.includes("ERROR"))) {
+            if (images.length === 0 && textSnippets.every(t => t.includes("ERROR") || t.includes("no se pudo"))) {
               contentExtractionFailed = true;
             }
           }
         } else if (ext === "pdf") {
           const buffer = await fileData.arrayBuffer();
-          const extracted = await extractPdfText(buffer);
+          const extracted = extractPdfTextRaw(buffer);
           if (extracted.trim().length === 0) {
             fileContentSnippet = "[No se pudo extraer texto del PDF. Puede ser un PDF escaneado o basado en imágenes.]";
             contentExtractionFailed = true;
           } else {
-            fileContentSnippet = extracted.substring(0, 4000);
+            fileContentSnippet = extracted.substring(0, 6000);
+          }
+        } else if (ext === "docx") {
+          const buffer = await fileData.arrayBuffer();
+          const extracted = extractDocxText(buffer);
+          if (extracted.trim().length === 0) {
+            fileContentSnippet = "[No se pudo extraer texto del archivo DOCX. El archivo puede estar corrupto o vacío.]";
+            contentExtractionFailed = true;
+          } else {
+            fileContentSnippet = extracted.substring(0, 6000);
           }
         } else if (["txt", "md", "csv"].includes(ext)) {
           const text = await fileData.text();
-          fileContentSnippet = text.substring(0, 4000);
+          fileContentSnippet = text.substring(0, 6000);
         } else if (IMAGE_EXTENSIONS.has(ext)) {
-          // Direct image upload — send as vision
           const buffer = await fileData.arrayBuffer();
           const img = imageToBase64(buffer, ext);
           if (img) {
@@ -206,8 +337,11 @@ Deno.serve(async (req) => {
             contentExtractionFailed = true;
             fileContentSnippet = "[ERROR: No se pudo procesar la imagen.]";
           }
-        } else if (["doc", "docx", "ppt", "pptx", "xls", "xlsx"].includes(ext)) {
-          fileContentSnippet = `[Archivo Office .${ext} recibido — evaluación basada en metadatos y contexto del módulo]`;
+        } else if (["ppt", "pptx", "xls", "xlsx"].includes(ext)) {
+          fileContentSnippet = `[Archivo Office .${ext} recibido — formato no permite extracción de texto directa. Se evaluará con los metadatos disponibles.]`;
+        } else if (ext === "doc") {
+          contentExtractionFailed = true;
+          fileContentSnippet = "[ERROR: Formato .doc (binario legacy) no soportado. El estudiante debe resubir en .docx o .pdf.]";
         } else {
           fileContentSnippet = `[Archivo .${ext} recibido — tipo binario/multimedia, NO se pudo leer el contenido]`;
           contentExtractionFailed = true;
@@ -219,6 +353,44 @@ Deno.serve(async (req) => {
     } catch (e) {
       contentExtractionFailed = true;
       fileContentSnippet = `[ERROR: Fallo técnico al procesar el archivo: ${e instanceof Error ? e.message : "error desconocido"}]`;
+    }
+
+    // ============================================================
+    // DEBUG: Log extracted text before sending to Claude
+    // ============================================================
+    console.log(`[evaluate-assignment] File: ${assignment.file_name}, Ext: .${ext}`);
+    console.log(`[evaluate-assignment] Content extraction failed: ${contentExtractionFailed}`);
+    console.log(`[evaluate-assignment] Extracted text preview (first 200 chars): ${fileContentSnippet.substring(0, 200)}`);
+    console.log(`[evaluate-assignment] Images count: ${extractedImages.length}`);
+
+    // ============================================================
+    // GUARD: If no text and no images, return 400 immediately
+    // ============================================================
+    if (
+      contentExtractionFailed &&
+      extractedImages.length === 0
+    ) {
+      // Still update the assignment with failure info
+      await supabase
+        .from("assignments")
+        .update({
+          grade: 1,
+          feedback: "No se pudo extraer el contenido de tu archivo. Por favor, vuelve a subirlo en formato .docx, .pdf (con texto, no escaneado), imágenes (.png/.jpg), o un .zip con archivos legibles.",
+          status: "graded",
+        })
+        .eq("id", assignmentId);
+
+      return new Response(
+        JSON.stringify({
+          grade: 1,
+          feedback: "No se pudo extraer el contenido de tu archivo. Por favor, vuelve a subirlo en formato .docx, .pdf (con texto, no escaneado), imágenes (.png/.jpg), o un .zip con archivos legibles.",
+          allGraded: false,
+          totalScore: null,
+          averageGrade: null,
+          certificateEligible: false,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     // Fetch student name
@@ -274,7 +446,6 @@ Responde ÚNICAMENTE con este JSON (sin markdown):
     // Build Claude messages with multimodal support
     const contentParts: any[] = [{ type: "text", text: userPrompt }];
 
-    // Add images for vision evaluation (max 10 images, each max ~5MB base64)
     for (const img of extractedImages.slice(0, 10)) {
       contentParts.push({
         type: "image",
@@ -321,9 +492,8 @@ Responde ÚNICAMENTE con este JSON (sin markdown):
       if (jsonMatch) {
         evaluation = JSON.parse(jsonMatch[0]);
       } else {
-        // If content extraction failed, default to failing grade
         evaluation = contentExtractionFailed
-          ? { grade: 1, feedback: "No se pudo procesar tu archivo. Por favor, vuelve a subirlo en un formato compatible (PDF, imágenes, o ZIP con archivos legibles)." }
+          ? { grade: 1, feedback: "No se pudo procesar tu archivo. Por favor, vuelve a subirlo en un formato compatible (.docx, .pdf, imágenes, o ZIP con archivos legibles)." }
           : { grade: 7, feedback: "Entrega recibida correctamente. Buen trabajo con las herramientas de IA." };
       }
     }
@@ -333,7 +503,7 @@ Responde ÚNICAMENTE con este JSON (sin markdown):
     // Enforce: if extraction failed, cap grade at max 1
     if (contentExtractionFailed && evaluation.grade >= 7) {
       evaluation.grade = 1;
-      evaluation.feedback = "No se pudo verificar el contenido de tu archivo. Por favor, vuelve a subirlo en un formato legible (PDF con texto, imágenes PNG/JPG, o ZIP con archivos válidos). " + evaluation.feedback;
+      evaluation.feedback = "No se pudo verificar el contenido de tu archivo. Por favor, vuelve a subirlo en un formato legible (.docx, .pdf con texto, imágenes PNG/JPG, o ZIP con archivos válidos). " + evaluation.feedback;
     }
 
     const { error: updateErr } = await supabase
