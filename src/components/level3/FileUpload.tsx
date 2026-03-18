@@ -41,6 +41,8 @@ const FileUpload: React.FC<FileUploadProps> = ({ moduleId, acceptedFormats, onUp
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const BLOCKED_EXTENSIONS = ['doc'];
+
   const handleFile = async (file: File) => {
     if (!user) return;
 
@@ -48,7 +50,16 @@ const FileUpload: React.FC<FileUploadProps> = ({ moduleId, acceptedFormats, onUp
       toast({ title: 'Archivo muy grande', description: 'El límite es 100MB.', variant: 'destructive' });
       return;
     }
-    // Accept all file types — no format restriction
+
+    const ext = file.name.split('.').pop()?.toLowerCase() || '';
+    if (BLOCKED_EXTENSIONS.includes(ext)) {
+      toast({
+        title: 'Formato no compatible',
+        description: 'Por favor guarda tu documento como .docx o .PDF para que la IA pueda leerlo.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     setUploading(true);
     try {
