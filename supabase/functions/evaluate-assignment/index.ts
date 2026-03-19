@@ -308,13 +308,14 @@ Deno.serve(async (req) => {
           }
         } else if (ext === "pdf") {
           const buffer = await fileData.arrayBuffer();
-          const extracted = extractPdfTextRaw(buffer);
-          if (extracted.trim().length === 0) {
-            fileContentSnippet = "[No se pudo extraer texto del PDF. Puede ser un PDF escaneado o basado en imágenes.]";
-            contentExtractionFailed = true;
-          } else {
-            fileContentSnippet = extracted.substring(0, 6000);
-          }
+          // Send PDF directly to Claude as a document block (native PDF support)
+          const pdfBase64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+          extractedImages.push({
+            media_type: "application/pdf" as any,
+            data: pdfBase64,
+            name: assignment.file_name as string,
+          });
+          fileContentSnippet = "[PDF enviado directamente a Claude para lectura nativa]";
         } else if (ext === "docx") {
           const buffer = await fileData.arrayBuffer();
           const extracted = extractDocxText(buffer);
@@ -446,19 +447,29 @@ Responde ÚNICAMENTE con este JSON (sin markdown):
     // Build Claude messages with multimodal support
     const contentParts: any[] = [{ type: "text", text: userPrompt }];
 
-    for (const img of extractedImages.slice(0, 10)) {
-      contentParts.push({
-        type: "image",
-        source: {
-          type: "base64",
-          media_type: img.media_type,
-          data: img.data,
-        },
-      });
-      contentParts.push({
-        type: "text",
-        text: `[Imagen: ${img.name}]`,
-      });
+    for (const file of extractedImages.slice(0, 10)) {
+      if (file.media_type === "application/pdf") {
+        // Native PDF support — Claude reads the full document
+        contentParts.push({
+          type: "document",
+          source: {
+            type: "base64",
+            media_type: "application/pdf",
+            data: file.data,
+          },
+        });
+      } else {
+        // Image
+        contentParts.push({
+          type: "image",
+          source: {
+            type: "base64",
+            media_type: file.media_type,
+            data: file.data,
+          },
+        });
+        contentParts.push({ type: "text", text: `[Imagen: ${file.name}]` });
+      }
     }
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -467,10 +478,11 @@ Responde ÚNICAMENTE con este JSON (sin markdown):
         "Content-Type": "application/json",
         "x-api-key": anthropicApiKey,
         "anthropic-version": "2023-06-01",
+        "anthropic-beta": "pdfs-2024-09-25",
       },
       body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 400,
+        model: "claude-sonnet-4-6",
+        max_tokens: 600,
         system: systemPrompt,
         messages: [{ role: "user", content: contentParts }],
       }),
