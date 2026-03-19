@@ -3,13 +3,22 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
-import { Upload, FileCheck, Loader2, Trash2, CheckCircle, MessageSquare, Bot } from 'lucide-react';
+import { Upload, FileCheck, Loader2, Trash2, CheckCircle, MessageSquare, Bot, Plus, RefreshCw } from 'lucide-react';
+
+export interface ExistingFile {
+  id: string;
+  file_name: string;
+  file_path: string;
+  status: string;
+  grade?: number | null;
+  feedback?: string | null;
+}
 
 interface FileUploadProps {
   moduleId: number;
   acceptedFormats: string;
   onUploadSuccess: (evaluationResult?: EvaluationResult) => void;
-  existingFile?: { id: string; file_name: string; file_path: string; status: string; grade?: number | null; feedback?: string | null } | null;
+  existingFiles: ExistingFile[];
 }
 
 export interface EvaluationResult {
@@ -33,23 +42,42 @@ const sanitizeFileName = (name: string): string => {
   return `${base}.${ext}`;
 };
 
-const FileUpload: React.FC<FileUploadProps> = ({ moduleId, acceptedFormats, onUploadSuccess, existingFile }) => {
+const BLOCKED_EXTENSIONS = ['doc'];
+
+const FileUpload: React.FC<FileUploadProps> = ({ moduleId, acceptedFormats, onUploadSuccess, existingFiles }) => {
   const { user } = useAuth();
   const [uploading, setUploading] = useState(false);
-  const [evaluating, setEvaluating] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const [evaluatingIds, setEvaluatingIds] = useState<Set<string>>(new Set());
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleFile = async (file: File) => {
+  const handleFiles = async (fileList: FileList) => {
     if (!user) return;
 
-    if (file.size > MAX_SIZE) {
-      toast({ title: 'Archivo muy grande', description: 'El límite es 100MB.', variant: 'destructive' });
-      return;
-    }
-    // Accept all file types — no format restriction
+    const files = Array.from(fileList);
+    for (const file of files) {
+      if (file.size > MAX_SIZE) {
+        toast({ title: 'Archivo muy grande', description: `"${file.name}" excede el límite de 100MB.`, variant: 'destructive' });
+        continue;
+      }
 
+      const ext = file.name.split('.').pop()?.toLowerCase() || '';
+      if (BLOCKED_EXTENSIONS.includes(ext)) {
+        toast({
+          title: 'Formato no compatible',
+          description: 'Por favor guarda tu documento como .docx o .PDF para que la IA pueda leerlo.',
+          variant: 'destructive',
+        });
+        continue;
+      }
+
+      await uploadSingleFile(file);
+    }
+  };
+
+  const uploadSingleFile = async (file: File) => {
+    if (!user) return;
     setUploading(true);
     try {
       const sanitized = sanitizeFileName(file.name);
@@ -72,14 +100,15 @@ const FileUpload: React.FC<FileUploadProps> = ({ moduleId, acceptedFormats, onUp
 
       if (dbError) throw dbError;
 
-      toast({ title: '¡Archivo subido!', description: 'Evaluando con IA... esto tomará unos segundos.' });
+      toast({ title: '¡Archivo subido!', description: `Evaluando "${file.name}" con IA...` });
       setUploading(false);
-      setEvaluating(true);
 
-      // Trigger AI evaluation
+      const assignmentId = insertedData.id;
+      setEvaluatingIds(prev => new Set(prev).add(assignmentId));
+
       try {
         const { data: evalData, error: evalError } = await supabase.functions.invoke('evaluate-assignment', {
-          body: { assignmentId: insertedData.id },
+          body: { assignmentId },
         });
 
         if (evalError) throw evalError;
@@ -87,7 +116,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ moduleId, acceptedFormats, onUp
         const result = evalData as EvaluationResult;
         toast({
           title: result.grade >= 7 ? '✅ ¡Aprobado!' : '📝 Evaluado',
-          description: `Calificación: ${result.grade}/10`,
+          description: `"${file.name}" — Calificación: ${result.grade}/10`,
         });
         onUploadSuccess(result);
       } catch (evalErr: any) {
@@ -96,33 +125,37 @@ const FileUpload: React.FC<FileUploadProps> = ({ moduleId, acceptedFormats, onUp
           title: 'Archivo subido',
           description: 'La evaluación automática no pudo completarse. Un administrador revisará tu entrega.',
         });
-        // Update status back to submitted so admin can manually grade
-        await supabase.from('assignments').update({ status: 'submitted' }).eq('id', insertedData.id);
+        await supabase.from('assignments').update({ status: 'submitted' }).eq('id', assignmentId);
         onUploadSuccess();
+      } finally {
+        setEvaluatingIds(prev => {
+          const next = new Set(prev);
+          next.delete(assignmentId);
+          return next;
+        });
       }
     } catch (err: any) {
       console.error('Upload error:', err);
       toast({ title: 'Error al subir', description: err.message || 'Intenta nuevamente.', variant: 'destructive' });
     } finally {
       setUploading(false);
-      setEvaluating(false);
       if (inputRef.current) inputRef.current.value = '';
     }
   };
 
-  const handleDelete = async () => {
-    if (!existingFile || !user) return;
-    setDeleting(true);
+  const handleDelete = async (file: ExistingFile) => {
+    if (!user) return;
+    setDeletingId(file.id);
     try {
       const { error: storageError } = await supabase.storage
         .from('assignments')
-        .remove([existingFile.file_path]);
+        .remove([file.file_path]);
       if (storageError) console.warn('Storage delete warning:', storageError);
 
       const { error: dbError } = await supabase
         .from('assignments')
         .delete()
-        .eq('id', existingFile.id);
+        .eq('id', file.id);
       if (dbError) throw dbError;
 
       toast({ title: 'Envío eliminado', description: 'Puedes subir un nuevo archivo.' });
@@ -131,132 +164,146 @@ const FileUpload: React.FC<FileUploadProps> = ({ moduleId, acceptedFormats, onUp
       console.error('Delete error:', err);
       toast({ title: 'Error al eliminar', description: err.message || 'Intenta nuevamente.', variant: 'destructive' });
     } finally {
-      setDeleting(false);
+      setDeletingId(null);
     }
   };
 
   const onDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) handleFile(file);
+    if (e.dataTransfer.files?.length) handleFiles(e.dataTransfer.files);
   };
 
-  // Show evaluating state
-  if (evaluating || existingFile?.status === 'evaluating') {
-    return (
-      <div className="flex items-center gap-3 p-4 rounded-xl bg-accent/10 border border-accent/30 animate-pulse">
-        <Bot className="w-6 h-6 text-accent flex-shrink-0 animate-bounce" />
-        <div className="min-w-0 flex-1">
-          <p className="font-medium text-foreground">{existingFile?.file_name || 'Archivo subido'}</p>
-          <p className="text-sm text-muted-foreground">Evaluando con IA... esto puede tomar unos segundos</p>
-        </div>
-        <Loader2 className="w-5 h-5 text-accent animate-spin flex-shrink-0" />
-      </div>
-    );
-  }
+  const renderFileCard = (file: ExistingFile) => {
+    const isEvaluating = file.status === 'evaluating' || evaluatingIds.has(file.id);
+    const isGraded = file.status === 'graded';
+    const passed = isGraded && file.grade != null && file.grade >= 7;
+    const isDeleting = deletingId === file.id;
 
-  if (existingFile) {
-    const isGraded = existingFile.status === 'graded';
-    const passed = isGraded && existingFile.grade != null && existingFile.grade >= 7;
+    if (isEvaluating) {
+      return (
+        <div key={file.id} className="flex items-center gap-3 p-4 rounded-xl bg-accent/10 border border-accent/30 animate-pulse">
+          <Bot className="w-5 h-5 text-accent flex-shrink-0 animate-bounce" />
+          <div className="min-w-0 flex-1">
+            <p className="font-medium text-foreground text-sm truncate">{file.file_name}</p>
+            <p className="text-xs text-muted-foreground">Evaluando con IA...</p>
+          </div>
+          <Loader2 className="w-4 h-4 text-accent animate-spin flex-shrink-0" />
+        </div>
+      );
+    }
 
     if (isGraded) {
       return (
-        <div className={`p-4 rounded-xl border ${passed ? 'bg-success/5 border-success/30' : 'bg-destructive/5 border-destructive/30'}`}>
-          <div className="flex items-center gap-3 mb-3">
-            <CheckCircle className={`w-6 h-6 flex-shrink-0 ${passed ? 'text-success' : 'text-destructive'}`} />
+        <div key={file.id} className={`p-4 rounded-xl border ${passed ? 'bg-success/5 border-success/30' : 'bg-destructive/5 border-destructive/30'}`}>
+          <div className="flex items-center gap-3 mb-2">
+            <CheckCircle className={`w-5 h-5 flex-shrink-0 ${passed ? 'text-success' : 'text-destructive'}`} />
             <div className="min-w-0 flex-1">
-              <p className="font-medium text-foreground truncate">{existingFile.file_name}</p>
-              <p className={`text-sm font-semibold ${passed ? 'text-success' : 'text-destructive'}`}>
-                Calificación: {existingFile.grade}/10 — {passed ? 'Aprobado' : 'Reprobado'}
+              <p className="font-medium text-foreground text-sm truncate">{file.file_name}</p>
+              <p className={`text-xs font-semibold ${passed ? 'text-success' : 'text-destructive'}`}>
+                Calificación: {file.grade}/10 — {passed ? 'Aprobado' : 'Reprobado'}
               </p>
             </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => handleDelete(file)}
+              disabled={isDeleting}
+              className="text-destructive hover:text-destructive hover:bg-destructive/10 flex-shrink-0 h-8 w-8"
+              title="Eliminar y volver a enviar"
+            >
+              {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+            </Button>
           </div>
-          {existingFile.feedback && (
+          {file.feedback && (
             <div className="bg-background rounded-lg p-3 border border-border">
               <div className="flex items-center gap-1.5 mb-1">
                 <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
                 <span className="text-xs font-medium text-muted-foreground">Feedback del evaluador IA</span>
               </div>
-              <p className="text-sm text-foreground">{existingFile.feedback}</p>
-            </div>
-          )}
-          {!passed && (
-            <div className="mt-3 flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDelete}
-                disabled={deleting}
-                className="border-destructive/30 text-destructive hover:bg-destructive/10"
-              >
-                {deleting ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Upload className="w-4 h-4 mr-1" />}
-                Reintentar — Volver a subir
-              </Button>
-              <span className="text-xs text-muted-foreground">Sube un nuevo archivo para ser evaluado nuevamente</span>
+              <p className="text-sm text-foreground">{file.feedback}</p>
             </div>
           )}
         </div>
       );
     }
 
-    // Submitted but not yet graded (fallback manual review)
+    // Submitted / pending
     return (
-      <div className="flex items-center gap-3 p-4 rounded-xl bg-primary/5 border border-primary/20">
-        <FileCheck className="w-6 h-6 text-primary flex-shrink-0" />
+      <div key={file.id} className="flex items-center gap-3 p-4 rounded-xl bg-primary/5 border border-primary/20">
+        <FileCheck className="w-5 h-5 text-primary flex-shrink-0" />
         <div className="min-w-0 flex-1">
-          <p className="font-medium text-foreground truncate">{existingFile.file_name}</p>
-          <p className="text-sm text-muted-foreground">Estado: Enviado — Pendiente de evaluación</p>
+          <p className="font-medium text-foreground text-sm truncate">{file.file_name}</p>
+          <p className="text-xs text-muted-foreground">Pendiente de evaluación</p>
         </div>
         <Button
           variant="ghost"
           size="icon"
-          onClick={handleDelete}
-          disabled={deleting}
-          className="text-destructive hover:text-destructive hover:bg-destructive/10 flex-shrink-0"
+          onClick={() => handleDelete(file)}
+          disabled={isDeleting}
+          className="text-destructive hover:text-destructive hover:bg-destructive/10 flex-shrink-0 h-8 w-8"
           title="Eliminar envío"
         >
-          {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+          {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
         </Button>
       </div>
     );
-  }
+  };
 
   return (
-    <div
-      className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
-        dragOver ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
-      }`}
-      onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-      onDragLeave={() => setDragOver(false)}
-      onDrop={onDrop}
-    >
-      {uploading ? (
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-10 h-10 text-primary animate-spin" />
-          <p className="text-muted-foreground">Subiendo archivo...</p>
-        </div>
-      ) : (
-        <div className="flex flex-col items-center gap-3">
-          <Upload className="w-10 h-10 text-muted-foreground" />
-          <div>
-            <p className="font-medium text-foreground">Arrastra tu archivo aquí o haz clic para seleccionar</p>
-            <p className="text-sm text-muted-foreground mt-1">Cualquier tipo de archivo · Máx: 100MB</p>
-          </div>
-          <Button variant="outline" onClick={() => inputRef.current?.click()} className="mt-2">
-            Seleccionar archivo
-          </Button>
+    <div className="space-y-3">
+      {/* Existing files list */}
+      {existingFiles.length > 0 && (
+        <div className="space-y-2">
+          {existingFiles.map(renderFileCard)}
         </div>
       )}
-      <input
-        ref={inputRef}
-        type="file"
-        className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) handleFile(file);
-        }}
-      />
+
+      {/* Upload zone - always visible */}
+      <div
+        className={`relative border-2 border-dashed rounded-xl p-6 text-center transition-colors ${
+          dragOver ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
+        }`}
+        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={onDrop}
+      >
+        {uploading ? (
+          <div className="flex flex-col items-center gap-2">
+            <Loader2 className="w-8 h-8 text-primary animate-spin" />
+            <p className="text-sm text-muted-foreground">Subiendo archivo...</p>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center gap-2">
+            {existingFiles.length > 0 ? (
+              <>
+                <Plus className="w-8 h-8 text-muted-foreground" />
+                <p className="font-medium text-foreground text-sm">Agregar más archivos o volver a enviar</p>
+                <p className="text-xs text-muted-foreground">Puedes subir varios archivos de distintos tipos</p>
+              </>
+            ) : (
+              <>
+                <Upload className="w-8 h-8 text-muted-foreground" />
+                <p className="font-medium text-foreground text-sm">Arrastra tus archivos aquí o haz clic para seleccionar</p>
+                <p className="text-xs text-muted-foreground">Puedes subir varios archivos · Máx: 100MB cada uno</p>
+              </>
+            )}
+            <Button variant="outline" size="sm" onClick={() => inputRef.current?.click()} className="mt-1 gap-2">
+              {existingFiles.length > 0 ? <RefreshCw className="w-3.5 h-3.5" /> : <Upload className="w-3.5 h-3.5" />}
+              {existingFiles.length > 0 ? 'Volver a enviar / Agregar archivo' : 'Seleccionar archivos'}
+            </Button>
+          </div>
+        )}
+        <input
+          ref={inputRef}
+          type="file"
+          multiple
+          className="hidden"
+          onChange={(e) => {
+            if (e.target.files?.length) handleFiles(e.target.files);
+          }}
+        />
+      </div>
     </div>
   );
 };

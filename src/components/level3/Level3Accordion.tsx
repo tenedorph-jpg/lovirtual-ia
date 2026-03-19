@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { CheckCircle, Lock, Upload, Clock, Award } from 'lucide-react';
-import FileUpload, { EvaluationResult } from './FileUpload';
+import FileUpload, { EvaluationResult, ExistingFile } from './FileUpload';
 import { level3Modules } from '@/data/level3Data';
 import { generateCertificatePDF } from '@/lib/generateCertificate';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,7 @@ import { toast } from '@/hooks/use-toast';
 
 const Level3Accordion: React.FC = () => {
   const { user, studentProgress, completeModule, markCertificateGenerated } = useAuth();
-  const [assignments, setAssignments] = useState<Record<number, { id: string; file_name: string; file_path: string; status: string; grade: number | null; feedback: string | null }>>({});
+  const [assignments, setAssignments] = useState<Record<number, ExistingFile[]>>({});
   const [showCertificate, setShowCertificate] = useState<{ totalScore: number; avg: number } | null>(null);
 
   const completedModules = studentProgress?.completed_modules ?? [];
@@ -23,24 +23,39 @@ const Level3Accordion: React.FC = () => {
       .select('id, module_id, file_name, file_path, status, grade, feedback')
       .eq('user_id', user.id)
       .gte('module_id', 201)
-      .lte('module_id', 210);
+      .lte('module_id', 210)
+      .order('created_at', { ascending: true });
 
     if (data) {
-      const map: Record<number, { id: string; file_name: string; file_path: string; status: string; grade: number | null; feedback: string | null }> = {};
+      const map: Record<number, ExistingFile[]> = {};
       data.forEach(a => {
-        map[a.module_id] = { id: a.id, file_name: a.file_name, file_path: a.file_path, status: a.status, grade: a.grade, feedback: a.feedback };
+        if (!map[a.module_id]) map[a.module_id] = [];
+        map[a.module_id].push({
+          id: a.id,
+          file_name: a.file_name,
+          file_path: a.file_path,
+          status: a.status,
+          grade: a.grade,
+          feedback: a.feedback,
+        });
       });
       setAssignments(map);
 
-      // Check certificate eligibility
-      const graded = data.filter(a => a.status === 'graded' && a.grade != null);
-      if (graded.length === 10) {
-        const allPassed = graded.every(a => (a.grade || 0) >= 7);
-        if (allPassed) {
-          const totalScore = graded.reduce((s, a) => s + (a.grade || 0), 0);
-          const avg = Math.round((totalScore / 10) * 10) / 10;
-          setShowCertificate({ totalScore, avg });
-        }
+      // Check certificate eligibility - need at least one graded & passed file per module
+      const allModulesPassed = level3Modules.every(mod => {
+        const files = map[mod.id] || [];
+        return files.some(f => f.status === 'graded' && (f.grade || 0) >= 7);
+      });
+
+      if (allModulesPassed) {
+        // Use best grade per module
+        const totalScore = level3Modules.reduce((sum, mod) => {
+          const files = map[mod.id] || [];
+          const bestGrade = Math.max(...files.filter(f => f.status === 'graded').map(f => f.grade || 0));
+          return sum + bestGrade;
+        }, 0);
+        const avg = Math.round((totalScore / 10) * 10) / 10;
+        setShowCertificate({ totalScore, avg });
       }
     }
   }, [user]);
@@ -50,15 +65,42 @@ const Level3Accordion: React.FC = () => {
   }, [fetchAssignments]);
 
   const getModuleStatus = (moduleId: number): 'completed' | 'available' | 'locked' => {
-    const assignment = assignments[moduleId];
-    // A module is completed if it has a graded assignment
-    if (assignment?.status === 'graded') return 'completed';
+    const files = assignments[moduleId] || [];
+    const hasPassed = files.some(f => f.status === 'graded' && (f.grade || 0) >= 7);
+    if (hasPassed) return 'completed';
     if (completedModules.includes(moduleId)) return 'completed';
     if (moduleId === 201) return 'available';
-    // Previous module must be graded or completed
-    const prevAssignment = assignments[moduleId - 1];
-    if (prevAssignment?.status === 'graded' || completedModules.includes(moduleId - 1)) return 'available';
+    // Previous module must have a passing grade or be completed
+    const prevFiles = assignments[moduleId - 1] || [];
+    const prevPassed = prevFiles.some(f => f.status === 'graded' && (f.grade || 0) >= 7);
+    if (prevPassed || completedModules.includes(moduleId - 1)) return 'available';
     return 'locked';
+  };
+
+  const getBestGrade = (moduleId: number): number | null => {
+    const files = assignments[moduleId] || [];
+    const graded = files.filter(f => f.status === 'graded' && f.grade != null);
+    if (graded.length === 0) return null;
+    return Math.max(...graded.map(f => f.grade!));
+  };
+
+  const getModuleStatusLabel = (moduleId: number): React.ReactNode => {
+    const files = assignments[moduleId] || [];
+    const bestGrade = getBestGrade(moduleId);
+    if (bestGrade !== null) {
+      return (
+        <span className={`text-xs font-medium ml-2 ${bestGrade >= 7 ? 'text-success' : 'text-destructive'}`}>
+          ✓ Mejor nota: {bestGrade}/10
+        </span>
+      );
+    }
+    if (files.some(f => f.status === 'evaluating')) {
+      return <span className="text-xs font-medium ml-2 text-accent">⏳ Evaluando...</span>;
+    }
+    if (files.some(f => f.status === 'submitted')) {
+      return <span className="text-xs text-primary font-medium ml-2">✓ Enviado ({files.length} archivo{files.length > 1 ? 's' : ''})</span>;
+    }
+    return null;
   };
 
   const handleUploadSuccess = async (moduleId: number, result?: EvaluationResult) => {
@@ -112,7 +154,7 @@ const Level3Accordion: React.FC = () => {
           const status = getModuleStatus(mod.id);
           const isLocked = status === 'locked';
           const isCompleted = status === 'completed';
-          const assignment = assignments[mod.id];
+          const moduleFiles = assignments[mod.id] || [];
 
           return (
             <AccordionItem
@@ -141,17 +183,7 @@ const Level3Accordion: React.FC = () => {
                     <div className="flex items-center gap-2 mt-0.5">
                       <Clock className="w-3.5 h-3.5 text-muted-foreground" />
                       <span className="text-xs text-muted-foreground">{mod.duration}</span>
-                      {assignment?.status === 'graded' && (
-                        <span className={`text-xs font-medium ml-2 ${(assignment.grade || 0) >= 7 ? 'text-success' : 'text-destructive'}`}>
-                          ✓ {assignment.grade}/10
-                        </span>
-                      )}
-                      {assignment?.status === 'evaluating' && (
-                        <span className="text-xs font-medium ml-2 text-accent">⏳ Evaluando...</span>
-                      )}
-                      {assignment?.status === 'submitted' && (
-                        <span className="text-xs text-primary font-medium ml-2">✓ Enviado</span>
-                      )}
+                      {getModuleStatusLabel(mod.id)}
                     </div>
                   </div>
                 </div>
@@ -170,7 +202,7 @@ const Level3Accordion: React.FC = () => {
                   moduleId={mod.id}
                   acceptedFormats={mod.acceptedFormats}
                   onUploadSuccess={(result) => handleUploadSuccess(mod.id, result)}
-                  existingFile={assignment || null}
+                  existingFiles={moduleFiles}
                 />
               </AccordionContent>
             </AccordionItem>
