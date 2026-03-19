@@ -29,6 +29,8 @@ const IMAGE_MIME: Record<string, string> = {
   webp: "image/webp",
   gif: "image/gif",
 };
+const VIDEO_EXTENSIONS = new Set(["mp4", "mov", "avi", "mkv", "webm", "wmv", "m4v"]);
+const AUDIO_EXTENSIONS = new Set(["mp3", "wav", "ogg", "m4a", "aac", "flac", "opus"]);
 
 function getFileExtension(name: string): string {
   return (name.split(".").pop() || "").toLowerCase();
@@ -230,6 +232,13 @@ function extractZipContents(buffer: ArrayBuffer): {
         } catch {
           textSnippets.push(`[Excel dentro del ZIP: ${filename} — no se pudo leer]`);
         }
+      } else if (VIDEO_EXTENSIONS.has(ext)) {
+        const sizeMB = Math.round(fileData.length / (1024 * 1024) * 10) / 10;
+        textSnippets.push(`[Video dentro del ZIP: ${filename} — ${sizeMB} MB entregado]`);
+      } else if (AUDIO_EXTENSIONS.has(ext)) {
+        const sizeMB = Math.round(fileData.length / (1024 * 1024) * 10) / 10;
+        const estMin = Math.round((sizeMB / 1.5) * 10) / 10;
+        textSnippets.push(`[Audio dentro del ZIP: ${filename} — ${sizeMB} MB (~${estMin} min estimado) entregado]`);
       }
     }
   } catch (e) {
@@ -392,11 +401,19 @@ Deno.serve(async (req) => {
           }
         } else if (["ppt", "pptx"].includes(ext)) {
           fileContentSnippet = `[Archivo PowerPoint .${ext} recibido — formato no permite extracción de texto directa. Se evaluará con los metadatos disponibles.]`;
+        } else if (VIDEO_EXTENSIONS.has(ext)) {
+          const sizeMB = Math.round((assignment.file_size as number) / (1024 * 1024) * 10) / 10;
+          const estMinutes = Math.round((sizeMB / 30) * 10) / 10; // ~30MB por minuto de video a calidad media
+          fileContentSnippet = `[Video .${ext} entregado correctamente — Tamaño: ${sizeMB} MB (~${estMinutes} min estimado a calidad media). No es posible reproducir el video, pero el archivo fue recibido. Evalúa si el tamaño es razonable para el tipo de entrega y asigna una calificación justa basándote en que el estudiante SÍ entregó el archivo de video.]`;
+        } else if (AUDIO_EXTENSIONS.has(ext)) {
+          const sizeMB = Math.round((assignment.file_size as number) / (1024 * 1024) * 10) / 10;
+          const estMinutes = Math.round((sizeMB / 1.5) * 10) / 10; // ~1.5MB por minuto de audio MP3 128kbps
+          fileContentSnippet = `[Audio .${ext} entregado correctamente — Tamaño: ${sizeMB} MB (~${estMinutes} min estimado). No es posible reproducir el audio, pero el archivo fue recibido. Evalúa si el tamaño es razonable para el tipo de entrega y asigna una calificación justa.]`;
         } else if (ext === "doc") {
           contentExtractionFailed = true;
           fileContentSnippet = "[ERROR: Formato .doc (binario legacy) no soportado. El estudiante debe resubir en .docx o .pdf.]";
         } else {
-          fileContentSnippet = `[Archivo .${ext} recibido — tipo binario/multimedia, NO se pudo leer el contenido]`;
+          fileContentSnippet = `[Archivo .${ext} recibido — tipo no reconocido, no se pudo leer el contenido]`;
           contentExtractionFailed = true;
         }
       } else {
@@ -463,7 +480,9 @@ Si por CUALQUIER razón técnica NO pudiste leer, ver o acceder al contenido rea
 - Explicar claramente en el feedback qué problema técnico hubo
 - Indicar al estudiante que vuelva a subir el archivo en un formato legible
 
-Solo da notas aprobatorias (7-10) cuando hayas podido VERIFICAR y EVALUAR el contenido real del entregable.`;
+Solo da notas aprobatorias (7-10) cuando hayas podido VERIFICAR y EVALUAR el contenido real del entregable.
+
+EXCEPCIÓN PARA MULTIMEDIA: Si el entregable es un archivo de VIDEO (.mp4, .mov, etc.) o AUDIO (.mp3, .wav, etc.), es NORMAL que no puedas reproducirlo. En ese caso, evalúa basándote en: (1) que el archivo fue entregado, (2) que el tamaño es razonable para la tarea (un video de 3 min debería pesar varios MB), (3) el nombre del archivo. Puedes dar nota aprobatoria (7-8) si el tamaño sugiere una entrega legítima.`;
 
     const hasPdfAttached = extractedImages.some(f => f.media_type === "application/pdf");
     const hasImages = extractedImages.some(f => f.media_type !== "application/pdf");
