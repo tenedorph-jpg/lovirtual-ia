@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { unzipSync } from "https://esm.sh/fflate@0.8.2";
+import * as XLSX from "https://esm.sh/xlsx@0.18.5";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -211,6 +212,24 @@ function extractZipContents(buffer: ArrayBuffer): {
         } else {
           textSnippets.push(`[DOCX dentro del ZIP: ${filename} — no se pudo extraer texto]`);
         }
+      } else if (["xls", "xlsx"].includes(ext)) {
+        try {
+          const workbook = XLSX.read(fileData, { type: "array" });
+          const xlsParts: string[] = [];
+          for (const sheetName of workbook.SheetNames) {
+            const sheet = workbook.Sheets[sheetName];
+            const csv = XLSX.utils.sheet_to_csv(sheet);
+            if (csv.trim()) xlsParts.push(`Hoja: ${sheetName}\n${csv}`);
+          }
+          const xlsText = xlsParts.join("\n\n");
+          if (xlsText.trim()) {
+            textSnippets.push(`--- ${filename} (Excel) ---\n${xlsText.substring(0, 2000)}`);
+          } else {
+            textSnippets.push(`[Excel dentro del ZIP: ${filename} — sin datos legibles]`);
+          }
+        } catch {
+          textSnippets.push(`[Excel dentro del ZIP: ${filename} — no se pudo leer]`);
+        }
       }
     }
   } catch (e) {
@@ -350,8 +369,29 @@ Deno.serve(async (req) => {
             contentExtractionFailed = true;
             fileContentSnippet = "[ERROR: No se pudo procesar la imagen.]";
           }
-        } else if (["ppt", "pptx", "xls", "xlsx"].includes(ext)) {
-          fileContentSnippet = `[Archivo Office .${ext} recibido — formato no permite extracción de texto directa. Se evaluará con los metadatos disponibles.]`;
+        } else if (["xls", "xlsx"].includes(ext)) {
+          const buffer = await fileData.arrayBuffer();
+          try {
+            const workbook = XLSX.read(new Uint8Array(buffer), { type: "array" });
+            const textParts: string[] = [];
+            for (const sheetName of workbook.SheetNames) {
+              const sheet = workbook.Sheets[sheetName];
+              const csv = XLSX.utils.sheet_to_csv(sheet);
+              if (csv.trim()) textParts.push(`--- Hoja: ${sheetName} ---\n${csv}`);
+            }
+            const extracted = textParts.join("\n\n");
+            if (extracted.trim().length === 0) {
+              fileContentSnippet = "[El archivo Excel está vacío o no contiene datos legibles.]";
+              contentExtractionFailed = true;
+            } else {
+              fileContentSnippet = extracted.substring(0, 6000);
+            }
+          } catch (e) {
+            fileContentSnippet = `[Error al leer el archivo Excel: ${e instanceof Error ? e.message : "error desconocido"}]`;
+            contentExtractionFailed = true;
+          }
+        } else if (["ppt", "pptx"].includes(ext)) {
+          fileContentSnippet = `[Archivo PowerPoint .${ext} recibido — formato no permite extracción de texto directa. Se evaluará con los metadatos disponibles.]`;
         } else if (ext === "doc") {
           contentExtractionFailed = true;
           fileContentSnippet = "[ERROR: Formato .doc (binario legacy) no soportado. El estudiante debe resubir en .docx o .pdf.]";
