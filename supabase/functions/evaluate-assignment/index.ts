@@ -326,7 +326,8 @@ Deno.serve(async (req) => {
             data: pdfBase64,
             name: assignment.file_name as string,
           });
-          fileContentSnippet = "[PDF enviado directamente a Claude para lectura nativa]";
+          // Leave fileContentSnippet empty — the PDF is sent as a document block above
+          fileContentSnippet = "";
         } else if (ext === "docx") {
           const buffer = await fileData.arrayBuffer();
           const extracted = extractDocxText(buffer);
@@ -424,6 +425,15 @@ Si por CUALQUIER razón técnica NO pudiste leer, ver o acceder al contenido rea
 
 Solo da notas aprobatorias (7-10) cuando hayas podido VERIFICAR y EVALUAR el contenido real del entregable.`;
 
+    const hasPdfAttached = extractedImages.some(f => f.media_type === "application/pdf");
+    const hasImages = extractedImages.some(f => f.media_type !== "application/pdf");
+
+    const contentSection = hasPdfAttached
+      ? `\nARCHIVO ADJUNTO: El documento PDF completo está adjunto a este mensaje — léelo íntegramente para evaluar el entregable. Incluye todo el texto e imágenes del archivo.`
+      : fileContentSnippet
+        ? `\nCONTENIDO EXTRAÍDO DEL DOCUMENTO:\n${fileContentSnippet}`
+        : `\n[No se pudo extraer contenido del archivo]`;
+
     const userPrompt = `CONTEXTO DEL MÓDULO:
 ${moduleContext}
 
@@ -434,7 +444,7 @@ DATOS DE LA ENTREGA:
 - Tamaño: ${Math.round((assignment.file_size as number) / 1024)} KB
 - Fecha de envío: ${assignment.created_at}
 - ¿Se pudo extraer contenido?: ${contentExtractionFailed ? "NO — hubo problemas técnicos" : "SÍ"}
-${fileContentSnippet ? `\nCONTENIDO EXTRAÍDO DEL DOCUMENTO:\n${fileContentSnippet}` : "\n[No se pudo extraer contenido del archivo]"}
+${contentSection}
 
 CRITERIOS DE EVALUACIÓN:
 1. Cumplimiento de instrucciones (¿entregó lo solicitado?)
@@ -447,7 +457,7 @@ INSTRUCCIONES:
 - Asigna una calificación del 1 al 10 (7+ es aprobatorio)
 - Proporciona feedback constructivo en español (máx 3 oraciones)
 - RECUERDA: Si NO pudiste ver/leer el contenido real, la nota DEBE ser 1/10
-- Si hay imágenes adjuntas, evalúalas visualmente con rigor
+- Si hay imágenes adjuntas o un PDF adjunto, evalúalos visualmente con rigor
 
 Responde ÚNICAMENTE con este JSON (sin markdown):
 {
@@ -455,32 +465,27 @@ Responde ÚNICAMENTE con este JSON (sin markdown):
   "feedback": "<feedback constructivo en español>"
 }`;
 
-    // Build Claude messages with multimodal support
-    const contentParts: any[] = [{ type: "text", text: userPrompt }];
+    // Build Claude messages — PDFs and images BEFORE text prompt (Anthropic best practice)
+    const contentParts: any[] = [];
 
-    for (const file of extractedImages.slice(0, 10)) {
-      if (file.media_type === "application/pdf") {
-        // Native PDF support — Claude reads the full document
-        contentParts.push({
-          type: "document",
-          source: {
-            type: "base64",
-            media_type: "application/pdf",
-            data: file.data,
-          },
-        });
-      } else {
-        // Image
-        contentParts.push({
-          type: "image",
-          source: {
-            type: "base64",
-            media_type: file.media_type,
-            data: file.data,
-          },
-        });
-        contentParts.push({ type: "text", text: `[Imagen: ${file.name}]` });
-      }
+    // 1. PDF documents first
+    for (const file of extractedImages.filter(f => f.media_type === "application/pdf")) {
+      contentParts.push({
+        type: "document",
+        source: { type: "base64", media_type: "application/pdf", data: file.data },
+      });
+    }
+
+    // 2. Text prompt
+    contentParts.push({ type: "text", text: userPrompt });
+
+    // 3. Images after text
+    for (const file of extractedImages.filter(f => f.media_type !== "application/pdf").slice(0, 10)) {
+      contentParts.push({
+        type: "image",
+        source: { type: "base64", media_type: file.media_type, data: file.data },
+      });
+      contentParts.push({ type: "text", text: `[Imagen: ${file.name}]` });
     }
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
