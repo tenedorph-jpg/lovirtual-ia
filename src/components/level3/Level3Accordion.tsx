@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { CheckCircle, Lock, Upload, Clock, Award } from 'lucide-react';
+import { CheckCircle, Lock, Upload, Clock, Award, MessageCircle } from 'lucide-react';
 import FileUpload, { EvaluationResult, ExistingFile } from './FileUpload';
 import { level3Modules } from '@/data/level3Data';
 import { generateCertificatePDF } from '@/lib/generateCertificate';
@@ -125,6 +125,22 @@ const Level3Accordion: React.FC = () => {
     toast({ title: '📄 Certificado generado', description: 'El PDF se ha descargado.' });
   };
 
+  const handleNotifyWhatsApp = async () => {
+    if (!showCertificate || !user) return;
+    const profileData = await supabase.from('profiles').select('full_name').eq('user_id', user.id).single();
+    const name = profileData.data?.full_name || 'Estudiante';
+    const score = showCertificate.totalScore;
+    const avg = showCertificate.avg;
+    const msg = encodeURIComponent(
+      `🎓 *Nuevo certificado generado - LoVirtual Academy*\n\n` +
+      `👤 Estudiante: *${name}*\n` +
+      `📘 Completó: *Nivel 3 — Dominio Práctico con IA*\n` +
+      `🏆 Calificación: *${score}/100* (Promedio: ${avg}/10)\n\n` +
+      `El estudiante ha completado todos los módulos del Nivel 3 con nota aprobatoria.`
+    );
+    window.open(`https://wa.me/17875898071?text=${msg}`, '_blank');
+  };
+
   return (
     <div className="space-y-6">
       {showCertificate && (
@@ -142,10 +158,16 @@ const Level3Accordion: React.FC = () => {
           <p className="text-sm text-muted-foreground mb-4">
             Has completado todos los módulos del Nivel 3: Dominio Práctico con una calificación aprobatoria. ¡Descarga tu certificado!
           </p>
-          <Button onClick={handleGenerateCertificate} className="gap-2 lovirtual-gradient-bg text-white">
-            <Award className="w-4 h-4" />
-            Descargar Certificado Nivel 3
-          </Button>
+          <div className="flex flex-wrap gap-3">
+            <Button onClick={handleGenerateCertificate} className="gap-2 lovirtual-gradient-bg text-white">
+              <Award className="w-4 h-4" />
+              Descargar Certificado Nivel 3
+            </Button>
+            <Button onClick={handleNotifyWhatsApp} variant="outline" className="gap-2 border-green-500 text-green-600 hover:bg-green-50">
+              <MessageCircle className="w-4 h-4" />
+              Enviar notificación WhatsApp
+            </Button>
+          </div>
         </div>
       )}
 

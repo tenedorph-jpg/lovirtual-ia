@@ -15,7 +15,7 @@ const MODULE_CONTEXT: Record<number, string> = {
   204: "Análisis y Limpieza de Datos: El estudiante debía limpiar un dataset de 100+ registros con IA, generar 3+ visualizaciones/insights y entregar un Excel con datos procesados y PDF con conclusiones.",
   205: "Creación de Presentaciones de Impacto: El estudiante debía crear una presentación de 10+ diapositivas usando IA para estructura, contenido y diseño sobre un tema de negocio.",
   206: "Locución Corporativa (Texto a Voz): El estudiante debía escribir un guión de 2+ min, generar audio con TTS de IA y entregar el guión y audio en ZIP.",
-  207: "Edición de Video Automatizada: El estudiante debía editar clips de video con IA (cortes, subtítulos, transiciones) y exportar un video final de máx. 3 minutos.",
+  207: "Generación de Video con IA (Prompts y Control): El estudiante debía diseñar al menos 3 prompts detallados para herramientas de generación de video con IA (Runway, Pika, Sora, Luma). Cada prompt debía incluir: descripción de escena, estilo visual, tipo de plano, movimiento de cámara y duración. Debía entregar un PDF/DOCX con los prompts, capturas de los resultados generados y un análisis de qué funcionó y qué mejoraría.",
   208: "Investigación Rápida de Mercado: El estudiante debía investigar un nicho usando IA, identificar competidores, tendencias y oportunidades, y crear un reporte ejecutivo de máx. 5 páginas.",
   209: "Prompt Engineering (Chatbots): El estudiante debía diseñar un chatbot con system prompt completo, documentar 10+ conversaciones de prueba y analizar mejoras.",
   210: "Proyecto Final Integrado: El estudiante debía crear un proyecto combinando 3+ habilidades de módulos anteriores, documentando herramientas, objetivos, proceso, resultados y reflexión.",
