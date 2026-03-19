@@ -18,19 +18,15 @@ function drawCornerDiamond(pdf: any, x: number, y: number, size: number) {
 }
 
 const imgToDataUrl = (src: string): Promise<string> =>
-  new Promise(resolve => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      const c = document.createElement('canvas');
-      c.width = img.width;
-      c.height = img.height;
-      c.getContext('2d')!.drawImage(img, 0, 0);
-      resolve(c.toDataURL('image/png'));
-    };
-    img.onerror = () => resolve('');
-    img.src = src;
-  });
+  fetch(src)
+    .then(r => r.blob())
+    .then(blob => new Promise<string>((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => resolve('');
+      reader.readAsDataURL(blob);
+    }))
+    .catch(() => '');
 
 export async function generateCertificatePDF(studentName: string, score: number, level: string = 'level1'): Promise<void> {
   const [firmaDataUrl, selloDataUrl] = await Promise.all([
