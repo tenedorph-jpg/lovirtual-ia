@@ -188,7 +188,7 @@ function extractZipContents(buffer: ArrayBuffer): {
       const ext = getFileExtension(filename);
 
       if (IMAGE_EXTENSIONS.has(ext) && images.length < 10) {
-        const base64 = btoa(String.fromCharCode(...fileData));
+        const base64 = uint8ArrayToBase64(fileData);
         images.push({
           media_type: IMAGE_MIME[ext] || "image/png",
           data: base64,
@@ -221,10 +221,21 @@ function extractZipContents(buffer: ArrayBuffer): {
   return { textSnippets, images, fileList };
 }
 
+/** Safe base64 encoding that handles large files without stack overflow */
+function uint8ArrayToBase64(bytes: Uint8Array): string {
+  let binary = '';
+  const chunkSize = 8192;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.subarray(i, i + chunkSize);
+    binary += String.fromCharCode(...chunk);
+  }
+  return btoa(binary);
+}
+
 /** Convert raw image bytes to base64 for Claude */
 function imageToBase64(buffer: ArrayBuffer, ext: string): { media_type: string; data: string } | null {
   try {
-    const data = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+    const data = uint8ArrayToBase64(new Uint8Array(buffer));
     return { media_type: IMAGE_MIME[ext] || "image/png", data };
   } catch {
     return null;
@@ -309,7 +320,7 @@ Deno.serve(async (req) => {
         } else if (ext === "pdf") {
           const buffer = await fileData.arrayBuffer();
           // Send PDF directly to Claude as a document block (native PDF support)
-          const pdfBase64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+          const pdfBase64 = uint8ArrayToBase64(new Uint8Array(buffer));
           extractedImages.push({
             media_type: "application/pdf" as any,
             data: pdfBase64,
