@@ -198,7 +198,7 @@ function extractZipContents(buffer: ArrayBuffer): {
         const text = new TextDecoder().decode(fileData);
         textSnippets.push(`--- ${filename} ---\n${text.substring(0, 2000)}`);
       } else if (ext === "pdf") {
-        const pdfText = extractPdfTextRaw(fileData.buffer);
+        const pdfText = extractPdfTextRaw(fileData.buffer as ArrayBuffer);
         if (pdfText.length > 0) {
           textSnippets.push(`--- ${filename} (PDF) ---\n${pdfText.substring(0, 2000)}`);
         } else {
