@@ -205,7 +205,7 @@ function extractZipContents(buffer: ArrayBuffer): {
           textSnippets.push(`[PDF dentro del ZIP: ${filename} — no se pudo extraer texto, posible PDF escaneado]`);
         }
       } else if (ext === "docx") {
-        const docxText = extractDocxText(fileData.buffer);
+        const docxText = extractDocxText(fileData.buffer as ArrayBuffer);
         if (docxText.length > 0) {
           textSnippets.push(`--- ${filename} (DOCX) ---\n${docxText.substring(0, 2000)}`);
         } else {
