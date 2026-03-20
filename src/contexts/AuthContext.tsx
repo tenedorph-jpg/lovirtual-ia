@@ -319,6 +319,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         completeModule,
         setFinalExamScore,
         markCertificateGenerated,
+        markLevel2Completed,
         updateStudentName,
         currentStudent,
         role: !user ? null : isAdmin ? 'admin' : 'student',
