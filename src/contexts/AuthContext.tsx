@@ -247,6 +247,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setStudentProgress(prev => prev ? { ...prev, certificate_generated: true } : null);
   };
 
+  const markLevel2Completed = async () => {
+    // Level 2 completion is derived from completed modules (101-110), no extra DB field needed.
+    // This is a no-op since setFinalExamScore already persists the score.
+  };
+
   const updateStudentName = async (name: string) => {
     if (!user) return;
     await supabase
