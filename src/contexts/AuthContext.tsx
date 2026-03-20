@@ -38,6 +38,7 @@ interface AuthContextType {
   completeModule: (moduleId: number) => Promise<void>;
   setFinalExamScore: (score: number) => Promise<void>;
   markCertificateGenerated: () => Promise<void>;
+  markLevel2Completed: () => Promise<void>;
   updateStudentName: (name: string) => Promise<void>;
   // Legacy compat for pages
   currentStudent: LegacyStudent | null;
