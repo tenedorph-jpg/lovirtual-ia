@@ -14,7 +14,9 @@ const LEVEL_INFO: Record<string, { title: string; subtitle: string; scoreLabel: 
 
 function drawCornerDiamond(pdf: any, x: number, y: number, size: number) {
   pdf.setFillColor(184, 152, 61);
-  pdf.lines([[size, -size], [size, size], [-size, size], [-size, -size]], x, y, [1, 1], 'F', true);
+  pdf.setDrawColor(184, 152, 61);
+  // Use circle instead of lines() for cross-version compatibility
+  pdf.circle(x, y, size * 1.1, 'F');
 }
 
 const imgToDataUrl = (src: string): Promise<string> =>
@@ -29,10 +31,18 @@ const imgToDataUrl = (src: string): Promise<string> =>
     .catch(() => '');
 
 export async function generateCertificatePDF(studentName: string, score: number, level: string = 'level1'): Promise<void> {
+  try {
   const [firmaDataUrl, selloDataUrl] = await Promise.all([
     imgToDataUrl('/firma.png'),
     imgToDataUrl('/sello.jpeg'),
   ]);
+
+  // Detect image format from data URL prefix
+  const getImgFormat = (dataUrl: string) => {
+    if (dataUrl.startsWith('data:image/jpeg') || dataUrl.startsWith('data:image/jpg')) return 'JPEG';
+    if (dataUrl.startsWith('data:image/png')) return 'PNG';
+    return 'PNG';
+  };
 
   const currentDate = new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
   const certId = `CERT-${Date.now()}-${Math.floor(Math.random() * 100)}`;
@@ -134,7 +144,7 @@ export async function generateCertificatePDF(studentName: string, score: number,
   pdf.setFillColor(235, 243, 250);
   pdf.setDrawColor(1, 80, 125);
   (pdf as any).setLineWidth(0.3);
-  (pdf as any).roundedRect((w - 210) / 2, 108, 210, 11, 3, 3, 'FD');
+  pdf.rect((w - 210) / 2, 108, 210, 11, 'FD');
   (pdf as any).setFont('helvetica', 'bold');
   pdf.setFontSize(10);
   pdf.setTextColor(1, 80, 125);
@@ -171,13 +181,13 @@ export async function generateCertificatePDF(studentName: string, score: number,
   const sX = w / 2, sY = fY - 12;
   const selloSize = 46;
   if (selloDataUrl) {
-    (pdf as any).addImage(selloDataUrl, 'PNG', sX - selloSize / 2, sY - selloSize / 2, selloSize, selloSize);
+    (pdf as any).addImage(selloDataUrl, getImgFormat(selloDataUrl), sX - selloSize / 2, sY - selloSize / 2, selloSize, selloSize);
   }
 
   const sigX = w - 60;
   const firmaW = 58, firmaH = 26;
   if (firmaDataUrl) {
-    (pdf as any).addImage(firmaDataUrl, 'PNG', sigX - firmaW / 2, fY - firmaH - 2, firmaW, firmaH);
+    (pdf as any).addImage(firmaDataUrl, getImgFormat(firmaDataUrl), sigX - firmaW / 2, fY - firmaH - 2, firmaW, firmaH);
   }
 
   pdf.setDrawColor(1, 80, 125);
@@ -197,4 +207,8 @@ export async function generateCertificatePDF(studentName: string, score: number,
   pdf.text(`ID: ${certId}  |  Autenticado por Academia LoVirtual LLC`, w - 16, h - 9, { align: 'right' });
 
   pdf.save(`Certificado_${studentName.replace(/\s+/g, '_')}_LoVirtual.pdf`);
+  } catch (err) {
+    console.error('Error generando certificado PDF:', err);
+    alert(`Error al generar el certificado: ${err instanceof Error ? err.message : 'Error desconocido'}. Revisa la consola del navegador para más detalles.`);
+  }
 }
