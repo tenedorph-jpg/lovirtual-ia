@@ -278,6 +278,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     timeSpentMinutes: studentProgress?.time_spent_minutes ?? 0,
     certificateGenerated: studentProgress?.certificate_generated ?? false,
     finalExamScore: studentProgress?.final_exam_score ?? undefined,
+    level2Completed: (studentProgress?.completed_modules ?? []).filter(id => id >= 101 && id <= 110).length >= 10,
   } : null;
 
   // Legacy: build students list for admin
