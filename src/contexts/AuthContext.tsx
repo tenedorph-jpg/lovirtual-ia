@@ -299,6 +299,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       timeSpentMinutes: prog?.time_spent_minutes || 0,
       certificateGenerated: prog?.certificate_generated || false,
       finalExamScore: prog?.final_exam_score ?? undefined,
+      level2Completed: (prog?.completed_modules || []).filter((id: number) => id >= 101 && id <= 110).length >= 10,
     };
   });
 
