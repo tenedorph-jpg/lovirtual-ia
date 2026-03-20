@@ -63,6 +63,7 @@ export interface LegacyStudent {
   timeSpentMinutes: number;
   certificateGenerated: boolean;
   finalExamScore?: number;
+  level2Completed: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
