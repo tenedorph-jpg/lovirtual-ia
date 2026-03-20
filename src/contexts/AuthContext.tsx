@@ -38,6 +38,7 @@ interface AuthContextType {
   completeModule: (moduleId: number) => Promise<void>;
   setFinalExamScore: (score: number) => Promise<void>;
   markCertificateGenerated: () => Promise<void>;
+  markLevel2Completed: () => Promise<void>;
   updateStudentName: (name: string) => Promise<void>;
   // Legacy compat for pages
   currentStudent: LegacyStudent | null;
@@ -62,6 +63,7 @@ export interface LegacyStudent {
   timeSpentMinutes: number;
   certificateGenerated: boolean;
   finalExamScore?: number;
+  level2Completed: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -245,6 +247,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setStudentProgress(prev => prev ? { ...prev, certificate_generated: true } : null);
   };
 
+  const markLevel2Completed = async () => {
+    // Level 2 completion is derived from completed modules (101-110), no extra DB field needed.
+    // This is a no-op since setFinalExamScore already persists the score.
+  };
+
   const updateStudentName = async (name: string) => {
     if (!user) return;
     await supabase
@@ -271,6 +278,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     timeSpentMinutes: studentProgress?.time_spent_minutes ?? 0,
     certificateGenerated: studentProgress?.certificate_generated ?? false,
     finalExamScore: studentProgress?.final_exam_score ?? undefined,
+    level2Completed: (studentProgress?.completed_modules ?? []).filter(id => id >= 101 && id <= 110).length >= 10,
   } : null;
 
   // Legacy: build students list for admin
@@ -291,6 +299,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       timeSpentMinutes: prog?.time_spent_minutes || 0,
       certificateGenerated: prog?.certificate_generated || false,
       finalExamScore: prog?.final_exam_score ?? undefined,
+      level2Completed: (prog?.completed_modules || []).filter((id: number) => id >= 101 && id <= 110).length >= 10,
     };
   });
 
@@ -310,6 +319,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         completeModule,
         setFinalExamScore,
         markCertificateGenerated,
+        markLevel2Completed,
         updateStudentName,
         currentStudent,
         role: !user ? null : isAdmin ? 'admin' : 'student',
