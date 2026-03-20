@@ -9,7 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { generateCertificatePDF } from '@/lib/generateCertificate';
 import {
   ArrowLeft, ArrowRight, CheckCircle, XCircle, Trophy,
-  Award, Download, MessageCircle, Brain, Loader2,
+  Award, Download, MessageCircle, Brain, Loader2, Rocket,
 } from 'lucide-react';
 
 interface AIEvaluation {
@@ -22,7 +22,7 @@ interface AIEvaluation {
 
 const Level2FinalExamPage: React.FC = () => {
   const navigate = useNavigate();
-  const { currentStudent, setFinalExamScore, markCertificateGenerated, updateStudentName } = useAuth();
+  const { currentStudent, setFinalExamScore, markCertificateGenerated, markLevel2Completed, updateStudentName } = useAuth();
 
   const [examStarted, setExamStarted] = useState(false);
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -39,8 +39,8 @@ const Level2FinalExamPage: React.FC = () => {
     return null;
   }
 
-  // If certificate already generated show it
-  if (currentStudent.certificateGenerated && currentStudent.finalExamScore) {
+  // Si ya completó el Nivel 2 (examen aprobado), mostrar el certificado directamente
+  if (currentStudent.level2Completed && currentStudent.finalExamScore) {
     return (
       <Level2CertificateView
         studentName={currentStudent.name}
@@ -97,7 +97,12 @@ const Level2FinalExamPage: React.FC = () => {
     setAiEval(evaluation);
     setIsEvaluating(false);
     setShowResults(true);
-    setFinalExamScore(evaluation.score);
+    await setFinalExamScore(evaluation.score);
+
+    // Si aprobó, marcar Nivel 2 como completado en student_progress
+    if (evaluation.approved) {
+      await markLevel2Completed();
+    }
   };
 
   const handleConfirmName = () => {
@@ -245,7 +250,14 @@ const Level2FinalExamPage: React.FC = () => {
 
             <p className="text-muted-foreground mb-8">{passed ? 'Has completado el Nivel 2. ¡Tu certificado está listo!' : 'Necesitas al menos 70% para aprobar.'}</p>
             {passed ? (
-              <Button size="lg" onClick={() => { markCertificateGenerated(); navigate('/level-2/final-exam'); }} className="lovirtual-gradient-bg text-white gap-2"><Award className="w-5 h-5" />Ver Mi Certificado</Button>
+              <div className="flex flex-col sm:flex-row justify-center gap-3">
+                <Button size="lg" onClick={() => { markCertificateGenerated(); navigate('/level-2/final-exam'); }} className="lovirtual-gradient-bg text-white gap-2">
+                  <Award className="w-5 h-5" />Ver Mi Certificado
+                </Button>
+                <Button size="lg" variant="outline" onClick={() => navigate('/level-3')} className="gap-2 border-2 border-primary text-primary hover:bg-primary hover:text-white">
+                  <Rocket className="w-5 h-5" />Ir al Nivel 3
+                </Button>
+              </div>
             ) : (
               <div className="flex justify-center gap-4">
                 <Button variant="outline" onClick={() => navigate('/level-2')}>Revisar Módulos</Button>
@@ -265,6 +277,7 @@ const Level2CertificateView: React.FC<{
   score: number;
   onBack: () => void;
 }> = ({ studentName, score, onBack }) => {
+  const navigate = useNavigate();
   const currentDate = new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
   const certId = `CERT-N2-${Date.now()}-${Math.floor(Math.random() * 100)}`;
   const courseName = 'Nivel 2: Implementación y Automatización con IA';
@@ -377,7 +390,7 @@ const Level2CertificateView: React.FC<{
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Button size="lg" onClick={generatePDF} className="lovirtual-gradient-bg text-white gap-2 h-14">
             <Download className="w-5 h-5" />
             Descargar Certificado PDF
@@ -385,10 +398,15 @@ const Level2CertificateView: React.FC<{
           <Button size="lg" variant="outline" onClick={handleWhatsApp}
             className="gap-2 h-14 border-2 border-success text-success hover:bg-success hover:text-white">
             <MessageCircle className="w-5 h-5" />
-            📲 Confirmar Finalización a Gerencia
+            📲 Notificar a Gerencia
+          </Button>
+          <Button size="lg" variant="outline" onClick={() => navigate('/level-3')}
+            className="gap-2 h-14 border-2 border-primary text-primary hover:bg-primary hover:text-white">
+            <Rocket className="w-5 h-5" />
+            🚀 Comenzar Nivel 3
           </Button>
         </div>
-        <p className="text-center text-sm text-muted-foreground mt-6">¡Felicitaciones por completar el Nivel 2!</p>
+        <p className="text-center text-sm text-muted-foreground mt-6">¡Felicitaciones por completar el Nivel 2! Ya tienes acceso al Nivel 3.</p>
       </div>
     </div>
   );

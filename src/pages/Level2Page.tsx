@@ -23,7 +23,11 @@ const Level2Page: React.FC = () => {
   const level2ModuleIds = new Set(level2Modules.map(m => m.id));
   const completedLevel2Count = completedModules.filter(id => level2ModuleIds.has(id)).length;
   const level2ProgressPercentage = Math.round((completedLevel2Count / totalLevel2Modules) * 100);
-  const allLevel2Completed = completedLevel2Count === totalLevel2Modules;
+
+  // Exam unlocks only after the first 8 modules (101-108) are completed
+  const REQUIRED_MODULES_FOR_EXAM = [101, 102, 103, 104, 105, 106, 107, 108];
+  const canAccessExam = REQUIRED_MODULES_FOR_EXAM.every(id => completedModules.includes(id));
+  const completedRequiredCount = REQUIRED_MODULES_FOR_EXAM.filter(id => completedModules.includes(id)).length;
 
   const handleLogout = () => {
     logout();
@@ -99,18 +103,20 @@ const Level2Page: React.FC = () => {
               <div>
                 <h3 className="text-xl font-bold text-foreground">Examen Final y Certificación — Nivel 2</h3>
                 <p className="text-muted-foreground">
-                  Completa los {totalLevel2Modules} módulos para desbloquear el examen final
+                  {canAccessExam
+                    ? 'Has completado los primeros 8 módulos. ¡Ya puedes tomar el examen final!'
+                    : `Completa los primeros 8 módulos para desbloquear el examen (${completedRequiredCount}/8 completados)`}
                 </p>
               </div>
             </div>
             <Button
               size="lg"
-              disabled={!allLevel2Completed}
+              disabled={!canAccessExam}
               onClick={() => navigate('/level-2/final-exam')}
-              className={allLevel2Completed ? 'lovirtual-gradient-bg text-white animate-pulse-glow' : ''}
+              className={canAccessExam ? 'lovirtual-gradient-bg text-white animate-pulse-glow' : ''}
             >
-              {allLevel2Completed ? (
-                currentStudent?.certificateGenerated ? (
+              {canAccessExam ? (
+                currentStudent?.level2Completed ? (
                   <>
                     <Award className="w-5 h-5 mr-2" />
                     Ver Certificado
@@ -124,7 +130,7 @@ const Level2Page: React.FC = () => {
               ) : (
                 <>
                   <Lock className="w-5 h-5 mr-2" />
-                  {completedLevel2Count}/{totalLevel2Modules} Módulos
+                  {completedRequiredCount}/8 módulos
                 </>
               )}
             </Button>
